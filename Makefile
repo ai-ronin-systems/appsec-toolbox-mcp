@@ -21,7 +21,7 @@ appsec-full: security-semgrep security-gitleaks security-osv security-trivy secu
 security-semgrep: toolbox-check ## Run Semgrep SAST against the mounted target
 	@rm -f "$(SEMGREP_REPORT)"
 	@semgrep scan \
-		--config auto \
+		--config p/default \
 		--metrics=off \
 		--disable-version-check \
 		--no-git-ignore \
