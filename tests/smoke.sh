@@ -184,11 +184,9 @@ grep -A2 '^  security-language:' "$ROOT/.makefile-mcp.yaml" | grep -q 'risk: saf
 grep -q '^  security.language: security-language$' "$ROOT/.makefile-mcp.yaml"
 
 # Reject stale pre-rename Makefile MCP identities in tracked project text.
-if grep -RInE \
-  --exclude-dir=.git \
-  --exclude='smoke.sh' \
-  'make-mcp|make_mcp|MAKE_MCP|\.make-mcp\.yaml|ai-ronin-systems/make-mcp' \
-  "$ROOT" >/dev/null 2>&1; then
+if git -C "$ROOT" ls-files -z -- ':!tests/smoke.sh' \
+  | (cd "$ROOT" && xargs -0 grep -InE \
+      'make-mcp|make_mcp|MAKE_MCP|\.make-mcp\.yaml|ai-ronin-systems/make-mcp') >/dev/null 2>&1; then
   echo "stale Makefile MCP identity found" >&2
   exit 1
 fi
