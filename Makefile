@@ -14,7 +14,7 @@ LANGUAGE_PROFILE_REPORT := $(OUTPUT_DIR)/language-profile.json
 SBOM_REPORT := $(OUTPUT_DIR)/sbom.cdx.json
 
 .PHONY: appsec-full security-semgrep security-gitleaks security-osv security-trivy security-checkov security-language \
-        supply-chain-sbom toolbox-check toolbox-versions test image
+        supply-chain-sbom toolbox-check toolbox-versions test test-image image
 
 appsec-full: security-semgrep security-gitleaks security-osv security-trivy security-checkov security-language supply-chain-sbom ## Run the complete passive AppSec evidence bundle
 
@@ -102,6 +102,10 @@ toolbox-versions:
 
 test:
 	@./tests/smoke.sh
+
+# Known-positive run of the real image against examples/vulnerable-sample (Docker + network).
+test-image:
+	@./tests/image.sh
 
 image:
 	@docker build -t appsec-toolbox-mcp:dev .
