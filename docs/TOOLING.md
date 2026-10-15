@@ -4,7 +4,7 @@ The image provides a generic passive AppSec baseline plus four language-speciali
 
 | Tool | Pinned version | Role |
 | --- | ---: | --- |
-| Makefile MCP | `0.1.0` | governed Make-to-MCP runtime |
+| Makefile MCP | `0.2.2` | governed Make-to-MCP runtime |
 | Semgrep | `1.174.0` | generic SAST |
 | Gitleaks | `8.29.1` | working-tree secret detection |
 | OSV-Scanner | `2.5.1` | dependency vulnerability evidence |
