@@ -48,6 +48,11 @@ tasks:
   image:
     enabled: false
 
+# One JSON line per MCP task run (task, status, exit code, duration, output size and tail),
+# written next to the scanner reports so the evidence records how it was produced.
+audit:
+  path: output/makefile-mcp-audit.jsonl
+
 # Makefile MCP passes only PATH, HOME, and USER to tasks by default. The language profile
 # selection and scanner caches must be inherited explicitly or they are silently dropped.
 environment:

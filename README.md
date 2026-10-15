@@ -94,6 +94,8 @@ to run only the generic scanner set.
 
 `APPSEC_LANGS` is a **deployment/local operator setting**, not an MCP task parameter. The agent still receives only the fixed governed capabilities above.
 
+Every MCP task run also appends one JSON line to `output/makefile-mcp-audit.jsonl`: task, risk, status, exit code, duration, output size, and the tail of the scanner output. Together with the native reports, it records how the evidence was produced.
+
 Every language-profile run writes `output/language-profile.json`, recording requested mode, detected languages, detection evidence, selected profiles, and whether each specialist scanner completed or was skipped.
 
 ### Java boundary

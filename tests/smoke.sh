@@ -186,6 +186,14 @@ with open(sys.argv[1], encoding="utf-8") as handle:
     report = json.load(handle)
 assert report["selection"]["selected"] == ["go"], report["selection"]
 PY
+python3 - "$TMP/output/makefile-mcp-audit.jsonl" <<'PY'
+import json
+import sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    records = [json.loads(line) for line in handle]
+assert [(r["task"], r["status"]) for r in records] == [("security-language", "passed")], records
+assert records[0]["risk"] == "safe" and records[0]["approval"] == "not_required", records[0]
+PY
 (
   cd "$TMP"
   if PATH="$TMP/bin:$PATH" makefile-mcp run toolbox-versions >/dev/null 2>&1; then
