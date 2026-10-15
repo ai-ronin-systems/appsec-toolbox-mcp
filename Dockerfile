@@ -95,3 +95,12 @@ ENV HOME=/tmp/home \
 
 ENTRYPOINT ["./scripts/entrypoint.sh"]
 CMD ["makefile-mcp", "serve"]
+
+# Last, so a version bump does not invalidate the scanner layers. The source label links the
+# GHCR package to this repository.
+ARG VERSION="dev"
+LABEL org.opencontainers.image.title="appsec-toolbox-mcp" \
+      org.opencontainers.image.description="Passive AppSec scanners exposed to AI agents as governed MCP tools via Makefile MCP." \
+      org.opencontainers.image.source="https://github.com/ai-ronin-systems/appsec-toolbox-mcp" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.version="${VERSION}"
