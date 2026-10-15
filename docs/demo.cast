@@ -1,0 +1,12 @@
+{"version": 2, "width": 96, "height": 46, "idle_time_limit": 2.0, "env": {"TERM": "xterm-256color"}, "title": "appsec-toolbox-mcp: an agent audits a repository"}
+[1.840263, "o", "\r\n\u001b[1m\u25b6 Agent connects to appsec-toolbox-mcp over MCP stdio\u001b[0m\r\n"]
+[2.643628, "o", "  \u001b[32m\u2713\u001b[0m make_appsec-full\r\n  \u001b[32m\u2713\u001b[0m make_security-checkov\r\n  \u001b[32m\u2713\u001b[0m make_security-gitleaks\r\n  \u001b[32m\u2713\u001b[0m make_security-language\r\n  \u001b[32m\u2713\u001b[0m make_security-osv\r\n  \u001b[32m\u2713\u001b[0m make_security-semgrep\r\n  \u001b[32m\u2713\u001b[0m make_security-trivy\r\n  \u001b[32m\u2713\u001b[0m make_supply-chain-sbom\r\n\r\n\u001b[1m\u25b6 Agent tries a maintenance target that is not exposed\u001b[0m\r\n"]
+[3.456036, "o", "  \u001b[31m\u2717 refused:\u001b[0m Unknown tool: make_toolbox-versions\r\n\r\n\u001b[1m\u25b6 Agent runs the full passive audit on vulnerable-sample/ (read-only mount)\u001b[0m\r\n"]
+[5.456036, "o", "  status: \u001b[32mpassed\u001b[0m\r\n"]
+[6.807324, "o", "\r\n\u001b[1m\u25b6 Scanner-native evidence in the output directory\u001b[0m\r\n"]
+[7.612757, "o", "  Semgrep      6 findings\r\n  Bandit       4 issues\r\n  Gitleaks     1 secret(s)\r\n  OSV-Scanner  22 known vulnerabilities\r\n  Trivy        11 vulns, 2 misconfigs\r\n  Checkov      2 failed checks\r\n  Syft         SBOM with 4 components\r\n"]
+[7.612918, "o", "\r\n\u001b[1m\u25b6 Provenance: run-manifest.json\u001b[0m\r\n"]
+[8.413034, "o", "  target   sha256:7bcc6c4d5058e564\u2026  (4 files)\r\n  semgrep           1.174.0   COMPLETED  \u001b[2m6339ef2e86c81a37\u2026\u001b[0m\r\n  gitleaks          8.29.1    COMPLETED  \u001b[2m186eb230ee8fb3b8\u2026\u001b[0m\r\n  osv-scanner       2.5.1     COMPLETED  \u001b[2md8f6108df3762d4a\u2026\u001b[0m\r\n  trivy             0.74.0    COMPLETED  \u001b[2m9cda1c9705d4f1fd\u2026\u001b[0m\r\n  checkov           3.3.8     COMPLETED  \u001b[2mc1c4c17e3f10f75d\u2026\u001b[0m\r\n  syft              1.51.0    COMPLETED  \u001b[2m533a0408bea0e8eb\u2026\u001b[0m\r\n  language-profile  -         COMPLETED  \u001b[2m0c9983f6eec4aaa5\u2026\u001b[0m\r\n  bandit            1.9.4     COMPLETED  \u001b[2m4cc9dbdedce7759b\u2026\u001b[0m\r\n"]
+[8.415381, "o", "\r\n\u001b[1m\u25b6 Audit log: makefile-mcp-audit.jsonl\u001b[0m\r\n"]
+[9.215502, "o", "  2026-10-15T14:57:36  appsec-full  passed  risk=safe  31s\r\n"]
+[13.215502, "o", ""]

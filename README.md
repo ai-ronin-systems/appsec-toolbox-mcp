@@ -4,6 +4,15 @@
 
 `appsec-toolbox-mcp` exposes a small set of trusted, passive security scanners to MCP clients. The audited repository is data. The toolbox Makefile is the trusted execution boundary.
 
+![An agent connects over MCP, is refused a maintenance target, audits a deliberately vulnerable repository, and reads the findings, run manifest, and audit log](docs/demo.svg)
+
+*Recorded from [`examples/agent_demo.py`](examples/agent_demo.py) against [`examples/vulnerable-sample`](examples/vulnerable-sample). Waiting time is shortened; the real scan time is in the last line. Reproduce it with:*
+
+```bash
+docker build -t appsec-toolbox-mcp:dev .
+uv run --with mcp==2.1.1 python examples/agent_demo.py examples/vulnerable-sample ./appsec-output
+```
+
 ```text
 untrusted repository (read-only)
           |
