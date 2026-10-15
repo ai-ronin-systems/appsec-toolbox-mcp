@@ -170,6 +170,30 @@ assert report["selection"]["mode"] == "explicit"
 assert report["selection"]["selected"] == ["python", "node"]
 PY
 
+# Run through Makefile MCP itself, not plain make: its governed environment policy decides
+# which variables reach the Makefile. APPSEC_LANGS must survive that boundary.
+cp "$ROOT/.makefile-mcp.yaml" "$TMP/.makefile-mcp.yaml"
+cp -R "$ROOT/config" "$TMP/config"
+rm -f "$TMP/output/"*
+(
+  cd "$TMP"
+  PATH="$TMP/bin:$PATH" APPSEC_LANGS=go makefile-mcp run security-language >/dev/null
+)
+python3 - "$TMP/output/language-profile.json" <<'PY'
+import json
+import sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    report = json.load(handle)
+assert report["selection"]["selected"] == ["go"], report["selection"]
+PY
+(
+  cd "$TMP"
+  if PATH="$TMP/bin:$PATH" makefile-mcp run toolbox-versions >/dev/null 2>&1; then
+    echo "maintenance target toolbox-versions must not be runnable through Makefile MCP" >&2
+    exit 1
+  fi
+)
+
 # Ensure the current Makefile MCP policy filename is present and the legacy name is absent.
 test -f "$ROOT/.makefile-mcp.yaml"
 test ! -e "$ROOT/.make-mcp.yaml"

@@ -48,6 +48,11 @@ tasks:
   image:
     enabled: false
 
+# Makefile MCP passes only PATH, HOME, and USER to tasks by default. The language profile
+# selection and scanner caches must be inherited explicitly or they are silently dropped.
+environment:
+  inherit: [PATH, HOME, USER, XDG_CACHE_HOME, APPSEC_LANGS]
+
 capabilities:
   security.audit: appsec-full
   security.sast: security-semgrep

@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 permissions:
@@ -12,7 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The smoke test runs tasks through Makefile MCP; install the same version the image pins.
+      - name: Install pinned Makefile MCP
+        run: |
+          spec="$(sed -n 's/^ARG MAKEFILE_MCP_SPEC="\(.*\)"/\1/p' Dockerfile)"
+          test -n "$spec"
+          pipx install "$spec"
       - name: Smoke test
         run: make test
       - name: Validate Dockerfile parse/build metadata
