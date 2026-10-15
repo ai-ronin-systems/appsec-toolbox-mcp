@@ -81,8 +81,13 @@ toolbox-check:
 	@test -d "$(TARGET_DIR)" || { echo "missing $(TARGET_DIR)/; mount the audited repository there" >&2; exit 2; }
 	@mkdir -p "$(OUTPUT_DIR)"
 
+# Fails if any scanner is missing or cannot execute; the version lines below use pipes,
+# which would otherwise hide a broken tool.
 toolbox-versions:
-	@printf 'makefile-mcp: '; makefile-mcp --version || true
+	@for tool in makefile-mcp semgrep gitleaks osv-scanner trivy checkov bandit njsscan gosec findsecbugs go syft; do \
+		command -v "$$tool" >/dev/null || { echo "missing scanner: $$tool" >&2; exit 1; }; \
+	done
+	@printf 'makefile-mcp: '; makefile-mcp --version
 	@printf 'semgrep: '; semgrep --version
 	@printf 'gitleaks: '; gitleaks version
 	@printf 'osv-scanner: '; osv-scanner --version
@@ -91,7 +96,7 @@ toolbox-versions:
 	@printf 'bandit: '; bandit --version | head -n 1
 	@printf 'njsscan: '; njsscan --version
 	@printf 'gosec: '; gosec -version 2>&1 | head -n 1
-	@printf 'findsecbugs: '; findsecbugs -version 2>&1 | head -n 1 || true
+	@printf 'findsecbugs: '; findsecbugs -version >/dev/null 2>&1 && basename /opt/findsecbugs/lib/findsecbugs-plugin-*.jar .jar
 	@printf 'go: '; go version
 	@printf 'syft: '; syft version | head -n 1
 

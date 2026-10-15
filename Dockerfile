@@ -69,6 +69,7 @@ RUN set -eux; \
     unzip -q /tmp/findsecbugs.zip -d /opt/findsecbugs; \
     fsb="$(find /opt/findsecbugs -type f -name findsecbugs.sh -print -quit)"; \
     test -n "$fsb"; \
+    sed -i 's/\r$//' "$fsb"; \
     chmod 0755 "$fsb"; \
     ln -s "$fsb" /usr/local/bin/findsecbugs; \
     rm -f /tmp/gosec.tar.gz /tmp/go.tar.gz /tmp/findsecbugs.zip
