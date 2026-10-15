@@ -5,6 +5,8 @@ on:
     branches:
       - main
   pull_request:
+  # The release workflow calls this full gate and publishes only if it passes.
+  workflow_call:
 
 permissions:
   contents: read
@@ -27,3 +29,17 @@ jobs:
         run: make test
       - name: Validate Dockerfile parse/build metadata
         run: docker build --check .
+
+  image:
+    name: Build image and run known-positive scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the real image
+        run: docker build -t appsec-toolbox-mcp:ci .
+      # Strict scanner check plus a full scan of examples/vulnerable-sample through Makefile MCP.
+      - name: Known-positive image test
+        run: make test-image IMAGE=appsec-toolbox-mcp:ci
