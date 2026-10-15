@@ -5,6 +5,8 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ## Unreleased
 
+## 0.2.0 — 2026-10-15
+
 First published release. 0.1.0 was never published, and its image could not be built.
 
 ### Fixed
@@ -21,7 +23,10 @@ First published release. 0.1.0 was never published, and its image could not be b
 
 ### Added
 
+- `output/run-manifest.json` per task: a target fingerprint anyone can recompute with coreutils,
+  pinned tool versions, execution status, and a SHA-256 per report (refactor plan phase R1).
 - Makefile MCP audit log at `output/makefile-mcp-audit.jsonl`.
+- `examples/agent_demo.py`, an MCP client demo, and its recording in the README.
 - `examples/vulnerable-sample` and `make test-image`, a known-positive scan of the real image that
   CI runs on every push.
 - Strict `toolbox-versions`: fails if any scanner is missing or cannot execute.

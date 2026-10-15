@@ -134,11 +134,14 @@ A Go repository that requires unavailable dependencies may therefore produce an 
 
 ## Quick start
 
-Build:
+Pull the released image and verify its signed build provenance:
 
 ```bash
-docker build -t appsec-toolbox-mcp:0.1.0 .
+docker pull ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.0
+gh attestation verify oci://ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.0 --owner ai-ronin-systems
 ```
+
+Or build it yourself with `docker build -t appsec-toolbox-mcp:dev .`.
 
 Run as an MCP stdio server:
 
@@ -152,7 +155,7 @@ docker run --rm -i \
   -e APPSEC_LANGS=auto \
   -v "$PWD/my-project:/runner/target:ro" \
   -v "$PWD/appsec-output:/runner/output:rw" \
-  appsec-toolbox-mcp:0.1.0
+  ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.0
 ```
 
 Or with Compose:
