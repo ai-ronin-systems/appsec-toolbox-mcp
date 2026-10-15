@@ -17,12 +17,14 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl make tar unzip openjdk-17-jre-headless \
  && rm -rf /var/lib/apt/lists/*
 
-RUN python -m pip install --no-cache-dir \
-      "${MAKEFILE_MCP_SPEC}" \
-      "semgrep==${SEMGREP_VERSION}"
+RUN python -m pip install --no-cache-dir "${MAKEFILE_MCP_SPEC}"
 
-# Isolate Python scanner dependency graphs from the Makefile MCP/Semgrep runtime.
-RUN python -m venv /opt/checkov \
+# Isolate every Python scanner's dependency graph from the Makefile MCP runtime. Semgrep pins
+# its own MCP SDK (mcp 1.x), which cannot share an environment with Makefile MCP (mcp 2.x).
+RUN python -m venv /opt/semgrep \
+ && /opt/semgrep/bin/pip install --no-cache-dir "semgrep==${SEMGREP_VERSION}" \
+ && ln -s /opt/semgrep/bin/semgrep /usr/local/bin/semgrep \
+ && python -m venv /opt/checkov \
  && /opt/checkov/bin/pip install --no-cache-dir "checkov==${CHECKOV_VERSION}" \
  && ln -s /opt/checkov/bin/checkov /usr/local/bin/checkov \
  && python -m venv /opt/bandit \
