@@ -1,0 +1,49 @@
+schema_version: 1
+
+defaults:
+  timeout_seconds: 1800
+
+tasks:
+  appsec-full:
+    risk: safe
+    timeout_seconds: 3600
+
+  security-semgrep:
+    risk: safe
+    timeout_seconds: 1800
+
+  security-gitleaks:
+    risk: safe
+    timeout_seconds: 1800
+
+  security-osv:
+    risk: safe
+    timeout_seconds: 1800
+
+  security-trivy:
+    risk: safe
+    timeout_seconds: 1800
+
+  supply-chain-sbom:
+    risk: safe
+    timeout_seconds: 1800
+
+  toolbox-check:
+    enabled: false
+
+  toolbox-versions:
+    enabled: false
+
+  test:
+    enabled: false
+
+  image:
+    enabled: false
+
+capabilities:
+  security.audit: appsec-full
+  security.sast: security-semgrep
+  security.secrets: security-gitleaks
+  security.dependencies: security-osv
+  security.repository: security-trivy
+  supply_chain.sbom: supply-chain-sbom

@@ -1,0 +1,4 @@
+title = "appsec-toolbox-mcp trusted Gitleaks policy"
+
+[extend]
+useDefault = true

@@ -1,0 +1,6 @@
+/output/*
+!/output/.gitkeep
+/target/*
+!/target/.gitkeep
+*.zip
+.DS_Store

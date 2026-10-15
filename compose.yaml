@@ -1,0 +1,19 @@
+services:
+  appsec-toolbox-mcp:
+    build:
+      context: .
+      args:
+        MAKEFILE_MCP_SPEC: ${MAKEFILE_MCP_SPEC:-makefile-mcp==0.1.0}
+    stdin_open: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=512m
+    environment:
+      APPSEC_LANGS: ${APPSEC_LANGS:-auto}
+    volumes:
+      - ${TARGET_DIR:?Set TARGET_DIR to the repository to audit}:/runner/target:ro
+      - ${OUTPUT_DIR:-./output}:/runner/output:rw

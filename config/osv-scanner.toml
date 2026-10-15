@@ -1,0 +1,3 @@
+# Intentionally empty trusted policy.
+# Passing this file prevents target-owned osv-scanner.toml files from changing
+# the evidence-gathering policy.
