@@ -14,7 +14,7 @@ services:
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:rw,nosuid,nodev,size=512m
+      - /tmp:rw,nosuid,nodev,size=3g
     environment:
       APPSEC_LANGS: ${APPSEC_LANGS:-auto}
     volumes:

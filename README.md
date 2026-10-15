@@ -130,7 +130,7 @@ docker run --rm -i \
   --read-only \
   --cap-drop=ALL \
   --security-opt=no-new-privileges:true \
-  --tmpfs /tmp:rw,nosuid,nodev,size=512m \
+  --tmpfs /tmp:rw,nosuid,nodev,size=3g \
   --user "$(id -u):$(id -g)" \
   -e APPSEC_LANGS=auto \
   -v "$PWD/my-project:/runner/target:ro" \
@@ -145,6 +145,8 @@ TARGET_DIR="$PWD/my-project" OUTPUT_DIR="$PWD/appsec-output" \
   HOST_UID="$(id -u)" HOST_GID="$(id -g)" APPSEC_LANGS=auto \
   docker compose run --rm -T appsec-toolbox-mcp
 ```
+
+The `/tmp` tmpfs holds scanner caches, and Trivy's vulnerability database alone is about 1.6 GB, so it is sized at 3 GB. It is RAM-backed and the databases are fetched again on every run.
 
 Running as your own user (`--user` / `HOST_UID`) lets the scanners write to the output directory and leaves the reports owned by you. Makefile MCP's lock files live on the `/tmp` tmpfs, so the root filesystem stays read-only.
 
