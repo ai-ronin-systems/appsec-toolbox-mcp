@@ -5,6 +5,14 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ## Unreleased
 
+## 0.2.1 — 2026-10-15
+
+### Fixed
+
+- Release images are signed: the attestation job logs in to GHCR so it can store build provenance
+  next to the image. The 0.2.0 image was published without provenance because of this; use 0.2.1
+  or later.
+
 ## 0.2.0 — 2026-10-15
 
 First published release. 0.1.0 was never published, and its image could not be built.

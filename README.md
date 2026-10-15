@@ -137,8 +137,8 @@ A Go repository that requires unavailable dependencies may therefore produce an 
 Pull the released image and verify its signed build provenance:
 
 ```bash
-docker pull ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.0
-gh attestation verify oci://ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.0 --owner ai-ronin-systems
+docker pull ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.1
+gh attestation verify oci://ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.1 --owner ai-ronin-systems
 ```
 
 Or build it yourself with `docker build -t appsec-toolbox-mcp:dev .`.
@@ -155,7 +155,7 @@ docker run --rm -i \
   -e APPSEC_LANGS=auto \
   -v "$PWD/my-project:/runner/target:ro" \
   -v "$PWD/appsec-output:/runner/output:rw" \
-  ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.0
+  ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.1
 ```
 
 Or with Compose:
