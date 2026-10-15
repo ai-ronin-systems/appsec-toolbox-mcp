@@ -10,7 +10,7 @@ The trusted unit is this repository:
 ├── .makefile-mcp.yaml     trusted MCP governance
 ├── scripts/               thin execution/selection helpers
 ├── target/                untrusted audit input, mounted read-only
-└── output/                scanner evidence + Makefile MCP audit log, writable
+└── output/                scanner evidence, run-manifest.json, Makefile MCP audit log, writable
 ```
 
 Makefile MCP's repository root is `/runner`. This is deliberate: both `target/` and `output/` remain inside the same confined root.

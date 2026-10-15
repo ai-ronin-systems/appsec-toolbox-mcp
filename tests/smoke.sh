@@ -133,6 +133,27 @@ for report in \
   test -s "$TMP/output/$report" || { echo "missing report: $report" >&2; exit 1; }
 done
 
+# run-manifest.json: the fingerprint must match the documented coreutils pipeline, and every
+# listed report digest must match the file on disk.
+expected_fingerprint="sha256:$(cd "$TMP/target" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)"
+python3 - "$TMP/output" "$expected_fingerprint" <<'PY'
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+output, expected = Path(sys.argv[1]), sys.argv[2]
+manifest = json.loads((output / "run-manifest.json").read_text(encoding="utf-8"))
+assert manifest["run"]["task"] == "appsec-full", manifest["run"]
+assert manifest["target"]["content_fingerprint"] == expected, (manifest["target"], expected)
+reports = {t["name"]: t for t in manifest["tools"] if "report" in t}
+for tool in ("semgrep", "gitleaks", "osv-scanner", "trivy", "checkov", "syft", "bandit", "gosec"):
+    entry = reports[tool]
+    digest = hashlib.sha256((output / entry["report"]).read_bytes()).hexdigest()
+    assert entry["report_sha256"] == digest, (tool, entry)
+    assert entry["status"] == "COMPLETED", entry
+PY
+
 python3 - "$TMP/output/language-profile.json" <<'PY'
 import json
 import sys
@@ -168,6 +189,18 @@ with open(sys.argv[1], encoding="utf-8") as handle:
     report = json.load(handle)
 assert report["selection"]["mode"] == "explicit"
 assert report["selection"]["selected"] == ["python", "node"]
+PY
+# A single-task run lists only that task's reports, never leftovers from the earlier bundle.
+python3 - "$TMP/output/run-manifest.json" <<'PY'
+import json
+import sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    manifest = json.load(handle)
+assert manifest["run"]["task"] == "security-language", manifest["run"]
+names = {t["name"] for t in manifest["tools"]}
+assert "semgrep" not in names and "trivy" not in names, names
+status = {t["name"]: t["status"] for t in manifest["tools"]}
+assert status["bandit"] == "COMPLETED" and status["gosec"] == "SKIPPED_NOT_APPLICABLE", status
 PY
 
 # Run through Makefile MCP itself, not plain make: its governed environment policy decides

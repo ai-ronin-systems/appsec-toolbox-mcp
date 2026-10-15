@@ -33,12 +33,15 @@ quiet run make -s toolbox-versions
 # The full bundle, through Makefile MCP's governed execution path.
 quiet run makefile-mcp run appsec-full
 
-python3 - "$OUT" <<'PY'
+expected_fingerprint="sha256:$(cd "$ROOT/examples/vulnerable-sample" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)"
+
+python3 - "$OUT" "$expected_fingerprint" <<'PY'
+import hashlib
 import json
 import sys
 from pathlib import Path
 
-out = Path(sys.argv[1])
+out, expected_fingerprint = Path(sys.argv[1]), sys.argv[2]
 
 
 def load(name):
@@ -63,6 +66,8 @@ trivy = load("trivy.json").get("Results", [])
 checkov = load("checkov.json")
 checkov = checkov if isinstance(checkov, list) else [checkov]
 profile = load("language-profile.json")
+manifest = load("run-manifest.json")
+with_reports = [t for t in manifest["tools"] if "report" in t]
 audit = [json.loads(line) for line in (out / "makefile-mcp-audit.jsonl").read_text().splitlines()]
 
 results = [
@@ -78,6 +83,11 @@ results = [
     check("checkov: failed Dockerfile checks", any(c["results"]["failed_checks"] for c in checkov)),
     check("syft: SBOM components", len(load("sbom.cdx.json").get("components", [])) > 0),
     check("language profile: python only", profile["selection"]["selected"] == ["python"]),
+    check("manifest: target fingerprint matches coreutils", manifest["target"]["content_fingerprint"] == expected_fingerprint),
+    check("manifest: report digests match files", len(with_reports) >= 8 and all(
+        hashlib.sha256((out / t["report"]).read_bytes()).hexdigest() == t["report_sha256"] for t in with_reports)),
+    check("manifest: pinned tool versions recorded", all(t["version"] for t in manifest["tools"] if t["name"] != "language-profile")
+        and manifest["toolbox"]["version"] and manifest["toolbox"]["makefile_mcp"]),
     check("audit log: appsec-full passed", [(r["task"], r["status"]) for r in audit] == [("appsec-full", "passed")]),
 ]
 sys.exit(0 if all(results) else 1)

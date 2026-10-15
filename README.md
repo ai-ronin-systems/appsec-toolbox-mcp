@@ -94,6 +94,14 @@ to run only the generic scanner set.
 
 `APPSEC_LANGS` is a **deployment/local operator setting**, not an MCP task parameter. The agent still receives only the fixed governed capabilities above.
 
+Every task also writes `output/run-manifest.json`, which ties the evidence to exactly what was scanned and how:
+
+- `target.content_fingerprint`: a SHA-256 over the mounted tree that anyone can recompute with coreutils: `cd <target> && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum`;
+- `tools[]`: each scanner the task ran, with its pinned version, an execution status (`COMPLETED`, `SKIPPED_NOT_APPLICABLE`, `SKIPPED_MISSING_PREREQUISITE`, `ERROR`), and the SHA-256 of its report. Only reports produced by this task are listed;
+- `coverage`: detected and selected language profiles.
+
+The manifest records execution facts only. It never grades or normalizes findings.
+
 Every MCP task run also appends one JSON line to `output/makefile-mcp-audit.jsonl`: task, risk, status, exit code, duration, output size, and the tail of the scanner output. Together with the native reports, it records how the evidence was produced.
 
 Every language-profile run writes `output/language-profile.json`, recording requested mode, detected languages, detection evidence, selected profiles, and whether each specialist scanner completed or was skipped.

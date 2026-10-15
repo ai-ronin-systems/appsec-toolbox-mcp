@@ -13,10 +13,17 @@ CHECKOV_REPORT := $(OUTPUT_DIR)/checkov.json
 LANGUAGE_PROFILE_REPORT := $(OUTPUT_DIR)/language-profile.json
 SBOM_REPORT := $(OUTPUT_DIR)/sbom.cdx.json
 
+# Write output/run-manifest.json for the task that was requested, not for each prerequisite,
+# so appsec-full produces one manifest covering all of its reports.
+define manifest
+$(if $(filter $@,$(MAKECMDGOALS)),@./scripts/write-manifest.py "$(TARGET_DIR)" "$(OUTPUT_DIR)" "$@")
+endef
+
 .PHONY: appsec-full security-semgrep security-gitleaks security-osv security-trivy security-checkov security-language \
         supply-chain-sbom toolbox-check toolbox-versions test test-image image
 
 appsec-full: security-semgrep security-gitleaks security-osv security-trivy security-checkov security-language supply-chain-sbom ## Run the complete passive AppSec evidence bundle
+	$(manifest)
 
 security-semgrep: toolbox-check ## Run Semgrep SAST against the mounted target
 	@rm -f "$(SEMGREP_REPORT)"
@@ -28,6 +35,7 @@ security-semgrep: toolbox-check ## Run Semgrep SAST against the mounted target
 		--json \
 		--output "$(SEMGREP_REPORT)" \
 		"$(TARGET_DIR)"
+	$(manifest)
 
 security-gitleaks: toolbox-check ## Scan the mounted working tree for secrets with Gitleaks
 	@rm -f "$(GITLEAKS_REPORT)"
@@ -39,10 +47,12 @@ security-gitleaks: toolbox-check ## Scan the mounted working tree for secrets wi
 		--report-format json \
 		--report-path "$(GITLEAKS_REPORT)" \
 		"$(TARGET_DIR)"
+	$(manifest)
 
 security-osv: toolbox-check ## Scan dependency metadata with OSV-Scanner without dependency resolution
 	@rm -f "$(OSV_REPORT)"
 	@./scripts/run-osv.sh "$(TARGET_DIR)" "$(OSV_REPORT)"
+	$(manifest)
 
 security-trivy: toolbox-check ## Scan vulnerabilities, misconfigurations, secrets, and licenses with Trivy
 	@rm -f "$(TRIVY_REPORT)"
@@ -55,6 +65,7 @@ security-trivy: toolbox-check ## Scan vulnerabilities, misconfigurations, secret
 		--skip-version-check \
 		--ignorefile config/.trivyignore \
 		"$(TARGET_DIR)"
+	$(manifest)
 
 security-checkov: toolbox-check ## Scan IaC and CI/CD configuration with Checkov
 	@rm -f "$(CHECKOV_REPORT)"
@@ -65,16 +76,19 @@ security-checkov: toolbox-check ## Scan IaC and CI/CD configuration with Checkov
 		--quiet \
 		--soft-fail \
 		> "$(CHECKOV_REPORT)"
+	$(manifest)
 
 security-language: toolbox-check ## Run applicable language-specific passive SAST profiles
 	@rm -f "$(LANGUAGE_PROFILE_REPORT)"
 	@APPSEC_LANGS="$(APPSEC_LANGS)" ./scripts/run-language-profiles.py "$(TARGET_DIR)" "$(OUTPUT_DIR)"
+	$(manifest)
 
 supply-chain-sbom: toolbox-check ## Generate a CycloneDX JSON SBOM with Syft
 	@rm -f "$(SBOM_REPORT)"
 	@syft scan "dir:$(TARGET_DIR)" \
 		--quiet \
 		--output "cyclonedx-json=$(SBOM_REPORT)"
+	$(manifest)
 
 # Maintenance targets are explicitly disabled from MCP exposure in .makefile-mcp.yaml.
 toolbox-check:

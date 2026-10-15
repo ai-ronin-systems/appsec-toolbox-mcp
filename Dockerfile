@@ -96,11 +96,17 @@ ENV HOME=/tmp/home \
 ENTRYPOINT ["./scripts/entrypoint.sh"]
 CMD ["makefile-mcp", "serve"]
 
-# Last, so a version bump does not invalidate the scanner layers. The source label links the
-# GHCR package to this repository.
-ARG VERSION="dev"
+# Pinned tool versions for run-manifest.json, written last so a version bump does not
+# invalidate the scanner layers. VERSION is the single source of the toolbox version.
+COPY --chown=toolbox:toolbox VERSION ./
+RUN printf '{"appsec-toolbox-mcp":"%s","makefile-mcp":"%s","semgrep":"%s","gitleaks":"%s","osv-scanner":"%s","trivy":"%s","checkov":"%s","bandit":"%s","njsscan":"%s","gosec":"%s","findsecbugs":"%s","syft":"%s","go":"%s"}\n' \
+      "$(cat VERSION)" "$(makefile-mcp --version)" "$SEMGREP_VERSION" "$GITLEAKS_VERSION" "$OSV_SCANNER_VERSION" \
+      "$TRIVY_VERSION" "$CHECKOV_VERSION" "$BANDIT_VERSION" "$NJSSCAN_VERSION" "$GOSEC_VERSION" \
+      "$FINDSECBUGS_VERSION" "$SYFT_VERSION" "$GO_VERSION" > tool-versions.json \
+ && python3 -m json.tool tool-versions.json >/dev/null
+
+# The source label links the GHCR package to this repository.
 LABEL org.opencontainers.image.title="appsec-toolbox-mcp" \
       org.opencontainers.image.description="Passive AppSec scanners exposed to AI agents as governed MCP tools via Makefile MCP." \
       org.opencontainers.image.source="https://github.com/ai-ronin-systems/appsec-toolbox-mcp" \
-      org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.version="${VERSION}"
+      org.opencontainers.image.licenses="Apache-2.0"
