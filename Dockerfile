@@ -77,7 +77,10 @@ WORKDIR /runner
 COPY --chown=toolbox:toolbox Makefile .makefile-mcp.yaml ./
 COPY --chown=toolbox:toolbox scripts/ ./scripts/
 COPY --chown=toolbox:toolbox config/ ./config/
+# Makefile MCP keeps its task locks under /runner/.makefile-mcp. The root filesystem is
+# read-only at runtime, so that state lives on the /tmp tmpfs; the entrypoint creates it.
 RUN mkdir -p target output \
+ && ln -s /tmp/makefile-mcp /runner/.makefile-mcp \
  && chown -R toolbox:toolbox /runner
 
 USER toolbox

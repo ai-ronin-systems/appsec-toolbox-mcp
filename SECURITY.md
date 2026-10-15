@@ -22,7 +22,8 @@ The provided Compose configuration uses:
 - writable output mount only;
 - all Linux capabilities dropped;
 - `no-new-privileges`;
-- non-root execution;
+- non-root execution (the host user via `HOST_UID`/`HOST_GID`, or uid 10001 by default);
+- Makefile MCP runtime state on the `/tmp` tmpfs only;
 - no Docker socket;
 - no host credential mounts.
 

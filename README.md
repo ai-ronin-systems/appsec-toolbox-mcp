@@ -129,6 +129,7 @@ docker run --rm -i \
   --cap-drop=ALL \
   --security-opt=no-new-privileges:true \
   --tmpfs /tmp:rw,nosuid,nodev,size=512m \
+  --user "$(id -u):$(id -g)" \
   -e APPSEC_LANGS=auto \
   -v "$PWD/my-project:/runner/target:ro" \
   -v "$PWD/appsec-output:/runner/output:rw" \
@@ -139,9 +140,11 @@ Or with Compose:
 
 ```bash
 TARGET_DIR="$PWD/my-project" OUTPUT_DIR="$PWD/appsec-output" \
-  APPSEC_LANGS=auto \
+  HOST_UID="$(id -u)" HOST_GID="$(id -g)" APPSEC_LANGS=auto \
   docker compose run --rm -T appsec-toolbox-mcp
 ```
+
+Running as your own user (`--user` / `HOST_UID`) lets the scanners write to the output directory and leaves the reports owned by you. Makefile MCP's lock files live on the `/tmp` tmpfs, so the root filesystem stays read-only.
 
 `makefile-mcp serve` uses stdio. This project does not add HTTP transport, authentication, a queue, a database, a workflow engine, or another command DSL.
 

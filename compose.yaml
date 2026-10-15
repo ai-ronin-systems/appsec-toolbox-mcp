@@ -5,6 +5,9 @@ services:
       args:
         MAKEFILE_MCP_SPEC: ${MAKEFILE_MCP_SPEC:-makefile-mcp==0.1.0}
     stdin_open: true
+    # Run as the host user so reports in OUTPUT_DIR are writable and owned by you:
+    # HOST_UID="$(id -u)" HOST_GID="$(id -g)" docker compose run ...
+    user: "${HOST_UID:-10001}:${HOST_GID:-10001}"
     read_only: true
     cap_drop:
       - ALL
