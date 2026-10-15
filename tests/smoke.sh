@@ -256,4 +256,9 @@ if git -C "$ROOT" ls-files -z -- ':!tests/smoke.sh' \
   exit 1
 fi
 
+# Release: storing the attestation in GHCR (push-to-registry) needs a GHCR login in the attest
+# job; without it v0.2.0 was pushed but never signed.
+awk '/^  attest:/{a=1} /^  github-release:/{a=0} a' "$ROOT/.github/workflows/release.yml" \
+  | grep -q 'docker login ghcr.io' || { echo "release attest job must log in to GHCR" >&2; exit 1; }
+
 echo "smoke: ok"
