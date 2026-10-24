@@ -7,12 +7,44 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Security
 
+- The documented `docker run` and Compose setups cap memory (6 GB, including the RAM-backed
+  `/tmp`) and processes (512). Scans of the samples peak near 2 GB and 100 processes; the image
+  test runs with these limits.
+- Checkov no longer contacts Prisma Cloud (`api0.prismacloud.io`) on each scan: it runs with
+  `--skip-download`. Syft's update check is off.
+- Inline suppression comments in the audited repository no longer hide findings: Semgrep runs
+  with `--disable-nosem`, Gitleaks with `--ignore-gitleaks-allow`, and gosec with `-nosec`.
+- The audited repository's scanner settings files no longer hide findings: `.semgrepignore`,
+  `.bandit`, `.njsscan`, and a root `.gitleaksignore` are all ignored. Bandit and njsscan get
+  toolbox config files, and Gitleaks scans a copy without the root `.gitleaksignore`, which it
+  otherwise always applies. `examples/hostile-sample` tries each one in the image test.
+- Checkov no longer reads the audited repository's `.checkov.yaml`. That file could name
+  `external-checks-dir` and make Checkov import and run the repository's Python, and could
+  skip checks. Checkov loads it only when `--directory` and its path are separate arguments,
+  so the toolbox passes `--directory=target`. A hostile fixture in the image test proves it.
 - Every downloaded scanner binary is checked against its published SHA-256, and the base
   image is pinned by digest, with Dependabot proposing updates.
 - Bandit ignores `# nosec` comments, so the audited repository cannot hide its own findings.
 
+### Fixed
+
+- `output/suppressions.json` counts symlinked directories as skipped symlinks.
+- `security-language` no longer fails on JavaScript repositories with findings. njsscan
+  exits 1 when it reports issues; that is now evidence, and only errors listed in its
+  report fail the scan.
+
 ### Added
 
+- MCP Registry metadata: `server.json` describes the image as an OCI package with its hardening
+  flags and mounts, the image carries the ownership label, and the release workflow publishes
+  it after pushing the image, using GitHub OIDC.
+- Unit tests for the scripts, and ruff lint and format checks, run by `make test` and CI.
+- Offline mode: `make offline-data` fetches Semgrep `p/default`, the Trivy databases, and OSV
+  databases per ecosystem into a directory; scans with `APPSEC_OFFLINE=1` then run with
+  `--network none` from that read-only data. The run manifest records `run.network` and the
+  fetched data's dates and SHA-256. The image test runs the full bundle offline.
+- `output/suppressions.json`, written by `security-semgrep`: inline suppression markers in the
+  target (file, line, marker, never the line text) and the scanner settings files it ships.
 - `docs/threat-model.md`: the audited repository as the attacker, threats and controls,
   guarantees and limits, and an operator checklist, linked from the README and SECURITY.md.
 - `run-manifest.json` lists, under `limitations`, each tool that ran whose results depend on

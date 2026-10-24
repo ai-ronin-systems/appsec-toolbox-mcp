@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+CONFIG = Path(__file__).resolve().parent.parent / "config"
 SUPPORTED = ("python", "java", "node", "go")
 ALIASES = {
     "py": "python",
@@ -183,6 +184,14 @@ def gosec_has_processing_errors(report: Path) -> bool:
     return bool(errors)
 
 
+def njsscan_has_errors(report: Path) -> bool:
+    try:
+        payload = json.loads(report.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return True
+    return bool(payload.get("errors"))
+
+
 def scanner_result(
     scanner: str,
     profile: str,
@@ -216,9 +225,7 @@ def run_scanner(
     rel_report = _relative(report, output_root.parent)
     if code not in allowed or not report.is_file():
         reason = (
-            f"scanner exited with code {code}"
-            if code not in allowed
-            else "report was not produced"
+            f"scanner exited with code {code}" if code not in allowed else "report was not produced"
         )
         return scanner_result(
             scanner,
@@ -272,6 +279,9 @@ def main() -> int:
                     "--exit-zero",
                     # The target is hostile: its "# nosec" comments must not hide findings.
                     "--ignore-nosec",
+                    # Toolbox-owned settings instead of the target's .bandit file.
+                    "--ini",
+                    str(CONFIG / "bandit.ini"),
                 ],
                 output / "bandit.json",
                 output,
@@ -305,8 +315,7 @@ def main() -> int:
                     "java",
                     "skipped",
                     reason=(
-                        "no compiled Java bytecode found; "
-                        "toolbox does not build untrusted source"
+                        "no compiled Java bytecode found; toolbox does not build untrusted source"
                     ),
                 )
             )
@@ -316,15 +325,34 @@ def main() -> int:
         )
 
     if "node" in selected:
-        results.append(
-            run_scanner(
+        node_report = output / "njsscan.json"
+        result = run_scanner(
+            "njsscan",
+            "node",
+            [
+                "njsscan",
+                "--json",
+                # Toolbox-owned settings instead of the target's .njsscan file.
+                "-c",
+                str(CONFIG / "njsscan.yml"),
+                "-o",
+                str(node_report),
+                str(target),
+            ],
+            node_report,
+            output,
+            # njsscan exits 1 when it reports findings; findings are evidence, not failure.
+            allowed_codes={0, 1},
+        )
+        if result["status"] == "completed" and njsscan_has_errors(node_report):
+            result = scanner_result(
                 "njsscan",
                 "node",
-                ["njsscan", "--json", "-o", str(output / "njsscan.json"), str(target)],
-                output / "njsscan.json",
-                output,
+                "error",
+                report=_relative(node_report, output.parent),
+                reason="njsscan reported scan errors",
             )
-        )
+        results.append(result)
     else:
         results.append(scanner_result("njsscan", "node", "skipped", reason="profile not selected"))
 
@@ -342,7 +370,8 @@ def main() -> int:
         result = run_scanner(
             "gosec",
             "go",
-            ["gosec", "-no-fail", "-fmt=json", f"-out={go_report}", "./..."],
+            # -nosec: the target's "#nosec" comments must not hide findings.
+            ["gosec", "-no-fail", "-nosec", "-fmt=json", f"-out={go_report}", "./..."],
             go_report,
             output,
             cwd=target,

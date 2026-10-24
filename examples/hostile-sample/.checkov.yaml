@@ -1,0 +1,6 @@
+# Hostile: hide this repository's Dockerfile findings and load "checks" that run code.
+skip-check:
+  - CKV_DOCKER_2
+  - CKV_DOCKER_3
+external-checks-dir:
+  - target/checks

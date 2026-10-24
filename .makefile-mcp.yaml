@@ -45,10 +45,16 @@ tasks:
   test:
     enabled: false
 
+  lint:
+    enabled: false
+
   test-image:
     enabled: false
 
   image:
+    enabled: false
+
+  offline-data:
     enabled: false
 
 # One JSON line per MCP task run (task, status, exit code, duration, output size and tail),
@@ -57,9 +63,9 @@ audit:
   path: output/makefile-mcp-audit.jsonl
 
 # Makefile MCP passes only PATH, HOME, and USER to tasks by default. The language profile
-# selection and scanner caches must be inherited explicitly or they are silently dropped.
+# selection, offline mode, and scanner caches must be inherited explicitly or they are silently dropped.
 environment:
-  inherit: [PATH, HOME, USER, XDG_CACHE_HOME, APPSEC_LANGS]
+  inherit: [PATH, HOME, USER, XDG_CACHE_HOME, APPSEC_LANGS, APPSEC_OFFLINE]
 
 capabilities:
   security.audit: appsec-full

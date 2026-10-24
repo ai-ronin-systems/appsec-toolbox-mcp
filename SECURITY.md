@@ -23,19 +23,20 @@ The provided Compose configuration uses:
 - read-only target mount;
 - writable output mount only;
 - all Linux capabilities dropped;
+- memory capped at 6 GB, including the `/tmp` tmpfs, and processes at 512;
 - `no-new-privileges`;
 - non-root execution (the host user via `HOST_UID`/`HOST_GID`, or uid 10001 by default);
 - Makefile MCP runtime state on the `/tmp` tmpfs only;
 - no Docker socket;
 - no host credential mounts.
 
-Some generic scanners need outbound network access for rules or advisory databases. Network access is therefore not disabled globally by default.
+Some generic scanners need outbound network access for rules or advisory databases. Network access is therefore not disabled by default. Offline mode (`APPSEC_OFFLINE=1`, see the README) scans with `--network none` from data fetched beforehand.
 
 ## Scanner execution policy
 
 The default targets are passive scanners. They must not intentionally execute the audited project's build, test, package-install, remediation, deployment, or application commands.
 
-OSV-Scanner is run with dependency resolution disabled. Gitleaks, OSV-Scanner, and Trivy receive trusted runner-owned configuration/ignore files so target-owned scanner policy cannot silently suppress evidence. Semgrep is run with Git ignore handling disabled. Checkov is limited to static IaC/CI frameworks, uses packaged policies, does not load external checks, and does not download external Terraform modules. No remediation command is exposed.
+OSV-Scanner is run with dependency resolution disabled. Every scanner receives trusted toolbox-owned settings so target-owned scanner policy cannot silently suppress evidence: config files for Gitleaks, OSV-Scanner, Trivy, Bandit, and njsscan; Semgrep ignores `.gitignore` and `.semgrepignore`; a root `.gitleaksignore` is excluded from the copy Gitleaks scans. A hostile fixture in the image test checks each one. Checkov is limited to static IaC/CI frameworks, uses packaged policies, never reads the target's `.checkov.yaml`, does not load external checks, and does not download external Terraform modules. No remediation command is exposed.
 
 Language specialists preserve the same boundary:
 

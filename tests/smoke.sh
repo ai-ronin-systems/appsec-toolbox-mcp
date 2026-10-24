@@ -12,10 +12,20 @@ printf 'module example.invalid/test\ngo 1.25\n' > "$TMP/target/go.mod"
 printf '{"dependencies":{}}\n' > "$TMP/target/package.json"
 printf '<project/>\n' > "$TMP/target/pom.xml"
 printf '\312\376\272\276' > "$TMP/target/target/classes/App.class"
+# Target-owned scanner settings that the toolbox must never apply.
+printf 'target/app.py:generic-api-key:1\n' > "$TMP/target/.gitleaksignore"
+printf 'import os\nos.system("x")  # nosec\n' > "$TMP/target/hidden.py"
+printf 'gitleaks:allow\0' > "$TMP/target/blob.bin"
+ln -s /etc/passwd "$TMP/target/escape"
 
-cat > "$TMP/bin/semgrep" <<'SCANNER'
-#!/bin/sh
-set -eu
+# Fail a stub unless the toolbox passed the flag that keeps target settings out.
+require() {
+  printf 'case " $* " in *" %s "*) ;; *) echo "%s must be called with %s" >&2; exit 3 ;; esac\n' "$2" "$1" "$2"
+}
+
+{ printf '#!/bin/sh\nset -eu\n'; require semgrep --x-ignore-semgrepignore-files; require semgrep --disable-nosem; } > "$TMP/bin/semgrep"
+cat >> "$TMP/bin/semgrep" <<'SCANNER'
+[ -z "${CALLS:-}" ] || echo "$(basename "$0") $*" >> "$CALLS"
 out=
 while [ "$#" -gt 0 ]; do
   [ "$1" = "--output" ] && { shift; out=$1; }
@@ -24,19 +34,22 @@ done
 printf '{"results":[]}\n' > "$out"
 SCANNER
 
-cat > "$TMP/bin/gitleaks" <<'SCANNER'
-#!/bin/sh
-set -eu
+{ printf '#!/bin/sh\nset -eu\n'; require gitleaks --ignore-gitleaks-allow; } > "$TMP/bin/gitleaks"
+cat >> "$TMP/bin/gitleaks" <<'SCANNER'
 out=
 while [ "$#" -gt 0 ]; do
   [ "$1" = "--report-path" ] && { shift; out=$1; }
+  source=$1
   shift || true
 done
+[ ! -e "$source/.gitleaksignore" ] || { echo "gitleaks would apply the target's .gitleaksignore" >&2; exit 3; }
+[ -e "$source/app.py" ] || { echo "gitleaks scanned a copy without the target files" >&2; exit 3; }
 printf '[]\n' > "$out"
 SCANNER
 
 cat > "$TMP/bin/osv-scanner" <<'SCANNER'
 #!/bin/sh
+[ -z "${CALLS:-}" ] || echo "$(basename "$0") $*" >> "$CALLS"
 printf '{"results":[{"packages":[]}]}\n'
 exit 1
 SCANNER
@@ -44,6 +57,7 @@ SCANNER
 cat > "$TMP/bin/trivy" <<'SCANNER'
 #!/bin/sh
 set -eu
+[ -z "${CALLS:-}" ] || echo "$(basename "$0") $*" >> "$CALLS"
 out=
 while [ "$#" -gt 0 ]; do
   [ "$1" = "--output" ] && { shift; out=$1; }
@@ -55,6 +69,12 @@ SCANNER
 cat > "$TMP/bin/checkov" <<'SCANNER'
 #!/bin/sh
 set -eu
+for arg in "$@"; do
+  case "$arg" in
+    -d|--directory) echo "checkov would load the target's .checkov.yaml" >&2; exit 3 ;;
+  esac
+done
+case " $* " in *" --skip-download "*) ;; *) echo "checkov must not contact Prisma Cloud" >&2; exit 3 ;; esac
 printf '{"check_type":"terraform","results":{"passed_checks":[],"failed_checks":[],"skipped_checks":[]}}\n'
 SCANNER
 
@@ -72,9 +92,8 @@ done
 printf '{"bomFormat":"CycloneDX","components":[]}\n' > "$out"
 SCANNER
 
-cat > "$TMP/bin/bandit" <<'SCANNER'
-#!/bin/sh
-set -eu
+{ printf '#!/bin/sh\nset -eu\n'; require bandit --ini; } > "$TMP/bin/bandit"
+cat >> "$TMP/bin/bandit" <<'SCANNER'
 out=
 ignore_nosec=
 while [ "$#" -gt 0 ]; do
@@ -86,20 +105,20 @@ done
 printf '{"results":[],"errors":[]}\n' > "$out"
 SCANNER
 
-cat > "$TMP/bin/njsscan" <<'SCANNER'
-#!/bin/sh
-set -eu
+{ printf '#!/bin/sh\nset -eu\n'; require njsscan -c; } > "$TMP/bin/njsscan"
+cat >> "$TMP/bin/njsscan" <<'SCANNER'
 out=
 while [ "$#" -gt 0 ]; do
   [ "$1" = "-o" ] && { shift; out=$1; }
   shift || true
 done
-printf '{"nodejs":{},"templates":{}}\n' > "$out"
+# Like the real njsscan: exit 1 when there are findings.
+printf '{"errors":[],"nodejs":{"eval_nodejs":{"files":[]}},"templates":{}}\n' > "$out"
+exit 1
 SCANNER
 
-cat > "$TMP/bin/gosec" <<'SCANNER'
-#!/bin/sh
-set -eu
+{ printf '#!/bin/sh\nset -eu\n'; require gosec -nosec; } > "$TMP/bin/gosec"
+cat >> "$TMP/bin/gosec" <<'SCANNER'
 out=
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -123,6 +142,7 @@ SCANNER
 
 chmod +x "$TMP/bin/"*
 cp -R "$ROOT/scripts" "$TMP/scripts"
+cp -R "$ROOT/config" "$TMP/config"
 cp "$ROOT/Makefile" "$TMP/Makefile"
 
 (
@@ -131,7 +151,7 @@ cp "$ROOT/Makefile" "$TMP/Makefile"
 )
 
 for report in \
-  semgrep.json gitleaks.json osv.json trivy.json checkov.json sbom.cdx.json \
+  semgrep.json suppressions.json gitleaks.json osv.json trivy.json checkov.json sbom.cdx.json \
   bandit.json njsscan.json gosec.json findsecbugs.xml language-profile.json; do
   test -s "$TMP/output/$report" || { echo "missing report: $report" >&2; exit 1; }
 done
@@ -155,6 +175,12 @@ for tool in ("semgrep", "gitleaks", "osv-scanner", "trivy", "checkov", "syft", "
     digest = hashlib.sha256((output / entry["report"]).read_bytes()).hexdigest()
     assert entry["report_sha256"] == digest, (tool, entry)
     assert entry["status"] == "COMPLETED", entry
+assert reports["suppression-inventory"]["version"] == manifest["toolbox"]["version"], reports
+suppressions = json.loads((output / "suppressions.json").read_text(encoding="utf-8"))
+assert suppressions["markers"] == [{"file": "hidden.py", "line": 2, "marker": "nosec"}], suppressions
+assert suppressions["settings_files"] == [".gitleaksignore"], suppressions
+assert suppressions["skipped"]["symlinks"] == 1 and suppressions["skipped"]["binary_files"] == 1, suppressions
+assert "os.system" not in json.dumps(suppressions), "line text must never be copied"
 live = [item.split(":")[0] for item in manifest["limitations"] if "at scan time" in item]
 assert live == ["semgrep", "osv-scanner", "trivy"], manifest["limitations"]
 PY
@@ -212,7 +238,6 @@ PY
 # Run through Makefile MCP itself, not plain make: its governed environment policy decides
 # which variables reach the Makefile. APPSEC_LANGS must survive that boundary.
 cp "$ROOT/.makefile-mcp.yaml" "$TMP/.makefile-mcp.yaml"
-cp -R "$ROOT/config" "$TMP/config"
 rm -f "$TMP/output/"*
 (
   cd "$TMP"
@@ -241,12 +266,66 @@ PY
   fi
 )
 
+# Offline mode: scanners read the fetched data, and the manifest says which data and when.
+rm -f "$TMP/output/"*
+if (cd "$TMP" && PATH="$TMP/bin:$PATH" APPSEC_OFFLINE=1 make -s security-semgrep >/dev/null 2>&1); then
+  echo "APPSEC_OFFLINE=1 must refuse to scan without offline data" >&2
+  exit 1
+fi
+if (cd "$TMP" && PATH="$TMP/bin:$PATH" APPSEC_OFFLINE=yes make -s security-semgrep >/dev/null 2>&1); then
+  echo "APPSEC_OFFLINE must accept only 0 or 1" >&2
+  exit 1
+fi
+mkdir -p "$TMP/offline-data/semgrep"
+cat > "$TMP/offline-data/offline-data.json" <<'JSON'
+{"fetched_at": "2026-10-01T00:00:00+00:00", "semgrep": {"ruleset": "p/default", "sha256": "ab"},
+ "osv": {"ecosystems": {"PyPI": {"sha256": "cd"}}}, "trivy": {"db_updated_at": "2026-09-30T00:00:00Z"}}
+JSON
+(
+  cd "$TMP"
+  PATH="$TMP/bin:$PATH" CALLS="$TMP/calls.log" APPSEC_OFFLINE=1 APPSEC_LANGS=none make appsec-full >/dev/null
+)
+grep -q '^semgrep .*--config offline-data/semgrep/p-default.yml' "$TMP/calls.log"
+grep -q '^osv-scanner .*--offline-vulnerabilities' "$TMP/calls.log"
+grep -q '^trivy .*--cache-dir offline-data/trivy --skip-db-update --skip-java-db-update' "$TMP/calls.log"
+python3 - "$TMP/output/run-manifest.json" <<'PY'
+import json
+import sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    manifest = json.load(handle)
+assert manifest["run"]["network"] == "offline", manifest["run"]
+assert manifest["offline_data"]["fetched_at"] == "2026-10-01T00:00:00+00:00", manifest
+limitations = manifest["limitations"]
+assert not any("at scan time" in item for item in limitations), limitations
+assert "semgrep: offline ruleset p/default fetched 2026-10-01T00:00:00+00:00" in limitations, limitations
+assert any(item.startswith("osv-scanner: offline databases") and "PyPI" in item for item in limitations)
+assert "trivy: offline database updated 2026-09-30T00:00:00Z" in limitations, limitations
+PY
+rm -rf "$TMP/offline-data" "$TMP/calls.log"
+
+# MCP Registry metadata names this image, at the toolbox version, with its ownership label.
+python3 - "$ROOT" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+server = json.loads((root / "server.json").read_text(encoding="utf-8"))
+version = (root / "VERSION").read_text(encoding="utf-8").strip()
+package = server["packages"][0]
+assert server["version"] == version, (server["version"], version)
+assert package["identifier"] == f"ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:{version}", package
+label = re.search(r'io\.modelcontextprotocol\.server\.name="([^"]+)"', (root / "Dockerfile").read_text())
+assert label and label.group(1) == server["name"], label
+PY
+
 # Ensure the current Makefile MCP policy filename is present and the legacy name is absent.
 test -f "$ROOT/.makefile-mcp.yaml"
 test ! -e "$ROOT/.make-mcp.yaml"
 
 # Ensure maintenance targets are explicitly hidden from Makefile MCP config.
-for task in toolbox-check toolbox-versions test test-image image; do
+for task in toolbox-check toolbox-versions offline-data test lint test-image image; do
   grep -A1 "^  ${task}:" "$ROOT/.makefile-mcp.yaml" | grep -q 'enabled: false'
 done
 

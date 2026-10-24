@@ -1,6 +1,7 @@
 #!/bin/sh
-# Known-positive test of the real image: every scanner must run in the hardened container
-# from the README and report the issue planted for it in examples/vulnerable-sample.
+# Known-positive test of the real image: every scanner must run in the hardened container,
+# with the resource limits from the README, and report the issue planted for it in
+# examples/vulnerable-sample.
 # Needs Docker and network access (rule sets and vulnerability databases are fetched).
 set -eu
 
@@ -9,16 +10,19 @@ IMAGE=${IMAGE:-appsec-toolbox-mcp:dev}
 OUT=$(mktemp -d)
 trap 'rm -rf "$OUT"' EXIT HUP INT TERM
 
+TARGET="$ROOT/examples/vulnerable-sample"
+RUN_OUT=$OUT
 run() {
   docker run --rm \
     --read-only \
     --cap-drop=ALL \
     --security-opt=no-new-privileges:true \
     --tmpfs /tmp:rw,nosuid,nodev,size=3g \
+    --memory=6g --pids-limit=512 \
     --user "$(id -u):$(id -g)" \
     -e APPSEC_LANGS=auto \
-    -v "$ROOT/examples/vulnerable-sample:/runner/target:ro" \
-    -v "$OUT:/runner/output:rw" \
+    -v "$TARGET:/runner/target:ro" \
+    -v "$RUN_OUT:/runner/output:rw" \
     "$IMAGE" "$@"
 }
 
@@ -26,6 +30,12 @@ LOG="$OUT/test.log"
 quiet() {
   "$@" >>"$LOG" 2>&1 || { cat "$LOG" >&2; echo "image test: '$*' failed" >&2; exit 1; }
 }
+
+# The MCP Registry verifies ownership through this label.
+label=$(docker image inspect --format '{{ index .Config.Labels "io.modelcontextprotocol.server.name" }}' "$IMAGE")
+test "$label" = "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["name"])' "$ROOT/server.json")" \
+  || { echo "image test: MCP Registry label is '$label'" >&2; exit 1; }
+echo "ok  registry: ownership label matches server.json"
 
 # Every scanner is installed and executes (catches broken installs such as CRLF shebangs).
 quiet run make -s toolbox-versions
@@ -89,6 +99,114 @@ results = [
     check("manifest: pinned tool versions recorded", all(t["version"] for t in manifest["tools"] if t["name"] != "language-profile")
         and manifest["toolbox"]["version"] and manifest["toolbox"]["makefile_mcp"]),
     check("audit log: appsec-full passed", [(r["task"], r["status"]) for r in audit] == [("appsec-full", "passed")]),
+]
+sys.exit(0 if all(results) else 1)
+PY
+
+# A hostile repository tries to run its own code and hide its findings through target-owned
+# scanner configuration. Every attempt must fail.
+TARGET="$ROOT/examples/hostile-sample"
+HOSTILE="$OUT/hostile"
+RUN_OUT=$HOSTILE
+mkdir -p "$HOSTILE"
+for task in security-checkov security-semgrep security-gitleaks security-language; do
+  quiet run makefile-mcp run "$task"
+done
+
+python3 - "$HOSTILE" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+out = Path(sys.argv[1])
+
+
+def check(label, ok):
+    print(f"{'ok' if ok else 'FAIL'}  {label}")
+    return ok
+
+
+checkov = json.loads((out / "checkov.json").read_text(encoding="utf-8"))
+checkov = checkov if isinstance(checkov, list) else [checkov]
+failed = {c["check_id"] for report in checkov for c in report["results"]["failed_checks"]}
+semgrep = {r["path"] for r in json.loads((out / "semgrep.json").read_text())["results"]}
+bandit = {r["test_id"] for r in json.loads((out / "bandit.json").read_text())["results"]}
+njsscan = json.loads((out / "njsscan.json").read_text()).get("nodejs", {})
+njsscan_files = {f["file_path"] for rule in njsscan.values() for f in rule.get("files", [])}
+gitleaks_lines = {(f["File"], f["StartLine"]) for f in json.loads((out / "gitleaks.json").read_text())}
+gitleaks = {path for path, _ in gitleaks_lines}
+semgrep_lines = {(r["path"], r["start"]["line"]) for r in json.loads((out / "semgrep.json").read_text())["results"]}
+suppressions = json.loads((out / "suppressions.json").read_text())
+gosec = {i["file"].rsplit("/", 1)[-1] for i in json.loads((out / "gosec.json").read_text())["Issues"]}
+results = [
+    check("hostile: target .checkov.yaml cannot load code", not (out / "TARGET_CODE_RAN").exists()),
+    check("hostile: target .checkov.yaml cannot skip checks", {"CKV_DOCKER_2", "CKV_DOCKER_3"} <= failed),
+    check("hostile: target .semgrepignore is ignored", "target/app.py" in semgrep),
+    check("hostile: target .bandit is ignored", "B602" in bandit),
+    check("hostile: target .njsscan is ignored", any(path.endswith("web/server.js") for path in njsscan_files)),
+    check("hostile: target .gitleaksignore is ignored", "target/app.py" in gitleaks),
+    check("hostile: # nosemgrep does not hide a finding", ("target/app.py", 11) in semgrep_lines),
+    check("hostile: gitleaks:allow does not hide a secret", ("target/app.py", 14) in gitleaks_lines),
+    check("hostile: #nosec does not hide a gosec finding", "main.go" in gosec),
+    check("hostile: suppression markers inventoried", {
+        ("app.py", 11, "nosemgrep"), ("app.py", 14, "gitleaks:allow"), ("main.go", 9, "nosec")
+    } <= {(m["file"], m["line"], m["marker"]) for m in suppressions["markers"]}),
+    check("hostile: settings files inventoried", {
+        ".semgrepignore", ".bandit", ".njsscan", ".gitleaksignore", ".checkov.yaml"
+    } <= set(suppressions["settings_files"])),
+]
+sys.exit(0 if all(results) else 1)
+PY
+
+# Offline mode: fetch the data with network access, then run the full bundle with no network
+# at all and require the planted findings that depend on that data.
+DATA="$OUT/offline-data"
+OFFLINE_OUT="$OUT/offline"
+mkdir -p "$DATA" "$OFFLINE_OUT"
+hardened="--read-only --cap-drop=ALL --security-opt=no-new-privileges:true --tmpfs /tmp:rw,nosuid,nodev,size=3g --memory=6g --pids-limit=512 --user $(id -u):$(id -g)"
+# shellcheck disable=SC2086
+quiet docker run --rm $hardened -e OSV_ECOSYSTEMS=PyPI \
+  -v "$DATA:/runner/offline-data:rw" "$IMAGE" make -s offline-data
+# shellcheck disable=SC2086
+quiet docker run --rm $hardened --network none -e APPSEC_LANGS=auto -e APPSEC_OFFLINE=1 \
+  -v "$ROOT/examples/vulnerable-sample:/runner/target:ro" \
+  -v "$DATA:/runner/offline-data:ro" \
+  -v "$OFFLINE_OUT:/runner/output:rw" \
+  "$IMAGE" makefile-mcp run appsec-full
+
+python3 - "$OFFLINE_OUT" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+out = Path(sys.argv[1])
+
+
+def load(name):
+    return json.loads((out / name).read_text(encoding="utf-8"))
+
+
+def check(label, ok):
+    print(f"{'ok' if ok else 'FAIL'}  {label}")
+    return ok
+
+
+semgrep = {r["check_id"] for r in load("semgrep.json")["results"]}
+osv = [
+    v
+    for result in load("osv.json").get("results", [])
+    for package in result.get("packages", [])
+    for v in package.get("vulnerabilities", [])
+]
+trivy = load("trivy.json").get("Results", [])
+manifest = load("run-manifest.json")
+results = [
+    check("offline: semgrep finds shell injection", any("subprocess" in rule for rule in semgrep)),
+    check("offline: osv finds vulnerable dependencies", len(osv) > 0),
+    check("offline: trivy finds vulnerable dependencies", any(r.get("Vulnerabilities") for r in trivy)),
+    check("offline: manifest records offline data", manifest["run"]["network"] == "offline"
+          and manifest["offline_data"]["semgrep"]["sha256"]
+          and not any("at scan time" in item for item in manifest["limitations"])),
 ]
 sys.exit(0 if all(results) else 1)
 PY

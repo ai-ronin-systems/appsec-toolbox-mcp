@@ -6,10 +6,21 @@ REPORT_PATH=${2:?report path required}
 TMP_REPORT="${REPORT_PATH}.tmp"
 trap 'rm -f "$TMP_REPORT"' EXIT HUP INT TERM
 
+# Offline: use the databases fetched by `make offline-data`. An ecosystem that was not fetched
+# fails the scan instead of reporting no vulnerabilities.
+OFFLINE_FLAG=
+if [ "${APPSEC_OFFLINE:-0}" = 1 ]; then
+  OFFLINE_FLAG=--offline-vulnerabilities
+  OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY="$PWD/${OFFLINE_DIR:?}/osv"
+  export OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY
+fi
+
 set +e
+# shellcheck disable=SC2086
 osv-scanner scan source \
   --recursive \
   --no-resolve \
+  $OFFLINE_FLAG \
   --config=config/osv-scanner.toml \
   --format json \
   "$TARGET_DIR" >"$TMP_REPORT"

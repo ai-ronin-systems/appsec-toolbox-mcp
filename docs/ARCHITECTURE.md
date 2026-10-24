@@ -12,6 +12,7 @@ The trusted unit is this repository:
 ├── .makefile-mcp.yaml     trusted MCP governance
 ├── scripts/               thin execution/selection helpers
 ├── target/                untrusted audit input, mounted read-only
+├── offline-data/          fetched rules and advisories for offline mode, mounted read-only
 └── output/                scanner evidence, run-manifest.json, Makefile MCP audit log, writable
 ```
 

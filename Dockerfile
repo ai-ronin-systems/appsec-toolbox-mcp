@@ -96,7 +96,7 @@ COPY --chown=toolbox:toolbox scripts/ ./scripts/
 COPY --chown=toolbox:toolbox config/ ./config/
 # Makefile MCP keeps its task locks under /runner/.makefile-mcp. The root filesystem is
 # read-only at runtime, so that state lives on the /tmp tmpfs; the entrypoint creates it.
-RUN mkdir -p target output \
+RUN mkdir -p target output offline-data \
  && ln -s /tmp/makefile-mcp /runner/.makefile-mcp \
  && chown -R toolbox:toolbox /runner
 
@@ -105,7 +105,8 @@ ENV HOME=/tmp/home \
     XDG_CACHE_HOME=/tmp/cache \
     PYTHONUNBUFFERED=1 \
     PATH=/usr/local/go/bin:${PATH} \
-    APPSEC_LANGS=auto
+    APPSEC_LANGS=auto \
+    APPSEC_OFFLINE=0
 
 ENTRYPOINT ["./scripts/entrypoint.sh"]
 CMD ["makefile-mcp", "serve"]
@@ -119,8 +120,10 @@ RUN printf '{"appsec-toolbox-mcp":"%s","makefile-mcp":"%s","semgrep":"%s","gitle
       "$FINDSECBUGS_VERSION" "$SYFT_VERSION" "$GO_VERSION" > tool-versions.json \
  && python3 -m json.tool tool-versions.json >/dev/null
 
-# The source label links the GHCR package to this repository.
-LABEL org.opencontainers.image.title="appsec-toolbox-mcp" \
+# The source label links the GHCR package to this repository. The MCP Registry reads
+# io.modelcontextprotocol.server.name to verify that this image belongs to the server.json name.
+LABEL io.modelcontextprotocol.server.name="io.github.ai-ronin-systems/appsec-toolbox-mcp" \
+      org.opencontainers.image.title="appsec-toolbox-mcp" \
       org.opencontainers.image.description="Passive AppSec scanners exposed to AI agents as governed MCP tools via Makefile MCP." \
       org.opencontainers.image.source="https://github.com/ai-ronin-systems/appsec-toolbox-mcp" \
       org.opencontainers.image.licenses="Apache-2.0"
