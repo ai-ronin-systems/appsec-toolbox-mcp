@@ -1,5 +1,7 @@
 # Architecture
 
+Threats, controls, and limits are in the [threat model](threat-model.md). This page covers ownership and design rules.
+
 ## Boundary
 
 The trusted unit is this repository:

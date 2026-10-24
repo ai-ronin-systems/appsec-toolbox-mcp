@@ -59,7 +59,7 @@ Checkov is intentionally restricted to static IaC and CI/CD frameworks. The tool
 
 Tool updates should be small, reviewable changes:
 
-1. update one pin;
+1. update one pin, and for downloaded binaries its SHA-256 for each architecture, taken from the checksums the project publishes with the release;
 2. build the image;
 3. run the smoke test;
 4. run a known-positive fixture for that scanner;
@@ -68,3 +68,5 @@ Tool updates should be small, reviewable changes:
 7. only then merge the version bump.
 
 Do not use floating `latest` versions in a tagged toolbox release.
+
+The base image is pinned by digest. Dependabot proposes digest and GitHub Actions updates; scanner pins follow the steps above.

@@ -33,6 +33,20 @@ untrusted repository (read-only)
     /runner/output
 ```
 
+## Threat model
+
+The audited repository is the attacker, and the agent reading its reports may be steered by it. So a steered agent can do almost nothing here. It gets eight parameterless, passive scans. It cannot choose the target, pass arguments, or run the repository's code.
+
+**Read the [threat model](docs/threat-model.md)** for the threats, the controls, what is and is not guaranteed, and the operator checklist.
+
+| Protected | Not protected |
+| --- | --- |
+| Target builds, installs, hooks, and Makefiles never run. | Scanner parser bugs; the container is the boundary. |
+| Target-owned scanner configs cannot suppress Gitleaks, OSV, or Trivy findings. | Inline suppressions such as `# nosemgrep` (Bandit's `# nosec` is ignored). |
+| The agent cannot pick the target or run anything but the eight scans. | An agent that misreports what the reports say. |
+| No credentials in the container; read-only, unprivileged, non-root. | Exfiltration by a compromised scanner: the network stays on for rule and advisory data. |
+| Each run's manifest ties report digests to a fingerprint of the scanned tree. | Tampering by anyone who can write `output/`; the manifest is not signed. |
+
 ## Why this shape
 
 The project intentionally does **not** execute the target repository's Makefile, scripts, CI configuration, package-manager commands, builds, remediation commands, or arbitrary shell commands. Make is used only by this trusted toolbox repository.
@@ -193,7 +207,7 @@ Findings are evidence, not execution errors:
 - OSV-Scanner normally returns `1` when vulnerabilities are found; the thin wrapper normalizes that to success while preserving genuine scanner errors.
 - Trivy is configured with `--exit-code 0`.
 - Checkov uses `--soft-fail`, so policy findings are evidence rather than process failures.
-- Bandit uses `--exit-zero`; malformed input/configuration can still fail the scanner.
+- Bandit uses `--exit-zero` and `--ignore-nosec`, so target `# nosec` comments cannot hide findings; malformed input/configuration can still fail the scanner.
 - njsscan emits JSON without failing merely because findings exist.
 - gosec uses `-no-fail`, then the toolbox inspects its JSON for Go package-processing errors.
 - FindSecBugs findings remain XML evidence; operational scanner failure still fails collection.

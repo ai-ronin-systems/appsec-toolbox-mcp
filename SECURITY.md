@@ -2,6 +2,8 @@
 
 ## Threat model
 
+The full threat model is in [docs/threat-model.md](docs/threat-model.md): attacker goals, threats and controls, what the toolbox does and does not guarantee, and an operator checklist. This page summarises the policy.
+
 The repository mounted at `target/` may be buggy, hostile, or deliberately malicious.
 
 The toolbox therefore assumes:
@@ -48,6 +50,16 @@ An unavailable dependency or missing Java bytecode is treated as a coverage limi
 
 `output/language-profile.json` is coverage metadata, not trusted policy. It records profile selection, detection evidence, and scanner completion/skips so downstream audit logic can distinguish "not applicable" from "not analyzed".
 
+## Supported version
+
+Security fixes ship in a new release of the image. Only the latest release is supported.
+
 ## Reporting vulnerabilities
 
-Please report vulnerabilities privately to the project maintainer before opening a public issue when disclosure could put users at risk.
+Use **GitHub Private Vulnerability Reporting**:
+
+<https://github.com/ai-ronin-systems/appsec-toolbox-mcp/security/advisories/new>
+
+Do not open a public issue for an undisclosed vulnerability. Include the image version or digest, reproduction steps, and the impact.
+
+Vulnerabilities in a bundled scanner belong to that scanner's project. Report a toolbox issue here if the toolbox's configuration or wiring makes it exploitable.

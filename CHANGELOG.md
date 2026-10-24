@@ -5,6 +5,20 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ## Unreleased
 
+### Security
+
+- Every downloaded scanner binary is checked against its published SHA-256, and the base
+  image is pinned by digest, with Dependabot proposing updates.
+- Bandit ignores `# nosec` comments, so the audited repository cannot hide its own findings.
+
+### Added
+
+- `docs/threat-model.md`: the audited repository as the attacker, threats and controls,
+  guarantees and limits, and an operator checklist, linked from the README and SECURITY.md.
+- `run-manifest.json` lists, under `limitations`, each tool that ran whose results depend on
+  data fetched at scan time: Semgrep's registry ruleset, the OSV API (which receives package
+  names and versions), and Trivy's vulnerability database.
+
 ## 0.2.1 — 2026-10-15
 
 ### Fixed

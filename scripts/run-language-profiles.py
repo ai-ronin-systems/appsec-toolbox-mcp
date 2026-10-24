@@ -270,6 +270,8 @@ def main() -> int:
                     str(output / "bandit.json"),
                     "--quiet",
                     "--exit-zero",
+                    # The target is hostile: its "# nosec" comments must not hide findings.
+                    "--ignore-nosec",
                 ],
                 output / "bandit.json",
                 output,
