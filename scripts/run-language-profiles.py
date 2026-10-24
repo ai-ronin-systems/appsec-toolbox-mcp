@@ -183,6 +183,14 @@ def gosec_has_processing_errors(report: Path) -> bool:
     return bool(errors)
 
 
+def njsscan_has_errors(report: Path) -> bool:
+    try:
+        payload = json.loads(report.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return True
+    return bool(payload.get("errors"))
+
+
 def scanner_result(
     scanner: str,
     profile: str,
@@ -316,15 +324,25 @@ def main() -> int:
         )
 
     if "node" in selected:
-        results.append(
-            run_scanner(
+        node_report = output / "njsscan.json"
+        result = run_scanner(
+            "njsscan",
+            "node",
+            ["njsscan", "--json", "-o", str(node_report), str(target)],
+            node_report,
+            output,
+            # njsscan exits 1 when it reports findings; findings are evidence, not failure.
+            allowed_codes={0, 1},
+        )
+        if result["status"] == "completed" and njsscan_has_errors(node_report):
+            result = scanner_result(
                 "njsscan",
                 "node",
-                ["njsscan", "--json", "-o", str(output / "njsscan.json"), str(target)],
-                output / "njsscan.json",
-                output,
+                "error",
+                report=_relative(node_report, output.parent),
+                reason="njsscan reported scan errors",
             )
-        )
+        results.append(result)
     else:
         results.append(scanner_result("njsscan", "node", "skipped", reason="profile not selected"))
 

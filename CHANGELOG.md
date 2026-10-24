@@ -15,6 +15,12 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
   image is pinned by digest, with Dependabot proposing updates.
 - Bandit ignores `# nosec` comments, so the audited repository cannot hide its own findings.
 
+### Fixed
+
+- `security-language` no longer fails on JavaScript repositories with findings. njsscan
+  exits 1 when it reports issues; that is now evidence, and only errors listed in its
+  report fail the scan.
+
 ### Added
 
 - `docs/threat-model.md`: the audited repository as the attacker, threats and controls,

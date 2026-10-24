@@ -208,7 +208,7 @@ Findings are evidence, not execution errors:
 - Trivy is configured with `--exit-code 0`.
 - Checkov uses `--soft-fail`, so policy findings are evidence rather than process failures.
 - Bandit uses `--exit-zero` and `--ignore-nosec`, so target `# nosec` comments cannot hide findings; malformed input/configuration can still fail the scanner.
-- njsscan emits JSON without failing merely because findings exist.
+- njsscan exits `1` when it finds issues; the toolbox treats that as success and fails only when its report lists scan errors.
 - gosec uses `-no-fail`, then the toolbox inspects its JSON for Go package-processing errors.
 - FindSecBugs findings remain XML evidence; operational scanner failure still fails collection.
 - Reports remain in each scanner's native structured format.

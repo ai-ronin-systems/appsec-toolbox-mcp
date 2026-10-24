@@ -99,7 +99,9 @@ while [ "$#" -gt 0 ]; do
   [ "$1" = "-o" ] && { shift; out=$1; }
   shift || true
 done
-printf '{"nodejs":{},"templates":{}}\n' > "$out"
+# Like the real njsscan: exit 1 when there are findings.
+printf '{"errors":[],"nodejs":{"eval_nodejs":{"files":[]}},"templates":{}}\n' > "$out"
+exit 1
 SCANNER
 
 cat > "$TMP/bin/gosec" <<'SCANNER'
