@@ -28,14 +28,21 @@ def test_invalid_selection_is_rejected(profiles, requested):
         profiles.parse_selection(requested, {})
 
 
-def test_detection_uses_markers_and_suffixes_and_prunes_vendored_trees(profiles, tmp_path):
+def test_detection_uses_markers_and_suffixes_and_skips_only_vcs_metadata(profiles, tmp_path):
     (tmp_path / "pom.xml").write_text("<project/>")
     (tmp_path / "web").mkdir()
     (tmp_path / "web" / "App.TSX").write_text("")
-    (tmp_path / "node_modules" / "dep").mkdir(parents=True)
-    (tmp_path / "node_modules" / "dep" / "x.py").write_text("")
+    (tmp_path / ".git" / "hooks").mkdir(parents=True)
+    (tmp_path / ".git" / "hooks" / "x.go").write_text("")
+    # A hostile repository chooses its layout: code under build/ must still select a profile.
+    (tmp_path / "build").mkdir()
+    (tmp_path / "build" / "app.py").write_text("")
 
-    assert profiles.detect_languages(tmp_path) == {"java": ["pom.xml"], "node": ["web/App.TSX"]}
+    assert profiles.detect_languages(tmp_path) == {
+        "python": ["build/app.py"],
+        "java": ["pom.xml"],
+        "node": ["web/App.TSX"],
+    }
 
 
 def test_detection_evidence_is_capped(profiles, tmp_path):
@@ -145,3 +152,36 @@ def test_stale_report_is_removed_before_the_scanner_runs(profiles, tmp_path):
 
     assert _scanner(profiles, tmp_path, "exit 0")["status"] == "error"
     assert not os.path.exists(tmp_path / "output" / "r.json")
+
+
+@pytest.mark.parametrize(
+    ("gosec", "exit_code", "cause"),
+    [
+        # Go packages that cannot load are the audited code's doing: a coverage limit.
+        (
+            'echo \'{"Golang errors": {"main.go": [{"error": "cannot load"}]}}\' > "${4#-out=}"',
+            0,
+            "target",
+        ),
+        # A scanner that cannot run at all still fails the task.
+        ("exit 3", 2, None),
+    ],
+)
+def test_only_scanner_failures_fail_the_task(
+    profiles, tmp_path, monkeypatch, gosec, exit_code, cause
+):
+    target, output, bin_dir = tmp_path / "target", tmp_path / "output", tmp_path / "bin"
+    for directory in (target, output, bin_dir):
+        directory.mkdir()
+    (target / "go.mod").write_text("module x\n")
+    (bin_dir / "gosec").write_text(f"#!/bin/sh\n{gosec}\n")
+    (bin_dir / "gosec").chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bin_dir}:{os.environ['PATH']}")
+    monkeypatch.setenv("APPSEC_LANGS", "go")
+    monkeypatch.setattr("sys.argv", ["run-language-profiles.py", str(target), str(output)])
+
+    assert profiles.main() == exit_code
+    report = json.loads((output / "language-profile.json").read_text())
+    gosec_result = next(item for item in report["scanners"] if item["scanner"] == "gosec")
+    assert gosec_result["status"] == "error"
+    assert gosec_result.get("cause") == cause

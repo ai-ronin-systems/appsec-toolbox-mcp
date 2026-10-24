@@ -25,23 +25,9 @@ ALIASES = {
     "go": "go",
     "golang": "go",
 }
-PRUNE_DIRS = {
-    ".git",
-    ".hg",
-    ".svn",
-    ".tox",
-    ".venv",
-    "venv",
-    "node_modules",
-    "vendor",
-    "dist",
-    "build",
-    "target",
-    "out",
-    "coverage",
-    ".pytest_cache",
-    ".mypy_cache",
-}
+# Only version-control metadata is skipped. The audited repository chooses its own layout, so
+# skipping names like build/ or vendor/ would let it hide code from profile selection.
+PRUNE_DIRS = {".git", ".hg", ".svn"}
 MARKERS = {
     "python": {
         "pyproject.toml",
@@ -199,12 +185,15 @@ def scanner_result(
     *,
     report: str | None = None,
     reason: str | None = None,
+    cause: str | None = None,
 ) -> dict[str, str]:
     item = {"scanner": scanner, "profile": profile, "status": status}
     if report is not None:
         item["report"] = report
     if reason is not None:
         item["reason"] = reason
+    if cause is not None:
+        item["cause"] = cause
     return item
 
 
@@ -351,6 +340,7 @@ def main() -> int:
                 "error",
                 report=_relative(node_report, output.parent),
                 reason="njsscan reported scan errors",
+                cause="target",
             )
         results.append(result)
     else:
@@ -384,6 +374,7 @@ def main() -> int:
                 "error",
                 report=_relative(go_report, output.parent),
                 reason="gosec reported Go package processing errors",
+                cause="target",
             )
         results.append(result)
     else:
@@ -406,11 +397,12 @@ def main() -> int:
     )
 
     errors = [item for item in results if item["status"] == "error"]
-    if errors:
-        for item in errors:
-            print(f"{item['scanner']}: {item.get('reason', 'scanner error')}", file=sys.stderr)
-        return 2
-    return 0
+    for item in errors:
+        print(f"{item['scanner']}: {item.get('reason', 'scanner error')}", file=sys.stderr)
+    # Errors caused by the audited code, such as Go packages that cannot load, are coverage
+    # limits recorded above. Failing the task for them would let the repository stop the whole
+    # bundle, and its manifest, with one bad import. A scanner that could not run still fails.
+    return 2 if any(item.get("cause") != "target" for item in errors) else 0
 
 
 if __name__ == "__main__":
