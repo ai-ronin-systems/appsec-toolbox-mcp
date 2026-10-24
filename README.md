@@ -70,7 +70,7 @@ That gives every scanner the same fixed target and avoids giving an agent an arb
 | Capability | Make target | Tool | Evidence |
 | --- | --- | --- | --- |
 | `security.audit` | `appsec-full` | all applicable providers | complete bundle |
-| `security.sast` | `security-semgrep` | Semgrep | `output/semgrep.json` |
+| `security.sast` | `security-semgrep` | Semgrep, suppression inventory | `output/semgrep.json`, `output/suppressions.json` |
 | `security.secrets` | `security-gitleaks` | Gitleaks | `output/gitleaks.json` |
 | `security.dependencies` | `security-osv` | OSV-Scanner | `output/osv.json` |
 | `security.repository` | `security-trivy` | Trivy | `output/trivy.json` |
@@ -124,6 +124,8 @@ Every task also writes `output/run-manifest.json`, which ties the evidence to ex
 - `coverage`: detected and selected language profiles.
 
 The manifest records execution facts only. It never grades or normalizes findings.
+
+`security-semgrep` also writes `output/suppressions.json`: every inline suppression marker in the target (`nosemgrep`, `nosec`, `gitleaks:allow`, `checkov:skip`, `trivy:ignore`, `tfsec:ignore`, `njsscan-ignore`) as file, line, and marker, plus the scanner settings files the target ships. The toolbox ignores most of them, but a repository that tries to silence its scanners is worth a reviewer's attention. Line text is never copied, because it is attacker-controlled. Symlinks, binaries, and files over 1 MiB are skipped and counted.
 
 Every MCP task run also appends one JSON line to `output/makefile-mcp-audit.jsonl`: task, risk, status, exit code, duration, output size, and the tail of the scanner output. Together with the native reports, it records how the evidence was produced.
 

@@ -29,6 +29,8 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Added
 
+- `output/suppressions.json`, written by `security-semgrep`: inline suppression markers in the
+  target (file, line, marker, never the line text) and the scanner settings files it ships.
 - `docs/threat-model.md`: the audited repository as the attacker, threats and controls,
   guarantees and limits, and an operator checklist, linked from the README and SECURITY.md.
 - `run-manifest.json` lists, under `limitations`, each tool that ran whose results depend on

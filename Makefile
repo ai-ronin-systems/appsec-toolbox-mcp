@@ -6,6 +6,7 @@ OUTPUT_DIR := output
 APPSEC_LANGS ?= auto
 
 SEMGREP_REPORT := $(OUTPUT_DIR)/semgrep.json
+SUPPRESSIONS_REPORT := $(OUTPUT_DIR)/suppressions.json
 GITLEAKS_REPORT := $(OUTPUT_DIR)/gitleaks.json
 OSV_REPORT := $(OUTPUT_DIR)/osv.json
 TRIVY_REPORT := $(OUTPUT_DIR)/trivy.json
@@ -25,8 +26,9 @@ endef
 appsec-full: security-semgrep security-gitleaks security-osv security-trivy security-checkov security-language supply-chain-sbom ## Run the complete passive AppSec evidence bundle
 	$(manifest)
 
-security-semgrep: toolbox-check ## Run Semgrep SAST against the mounted target
-	@rm -f "$(SEMGREP_REPORT)"
+security-semgrep: toolbox-check ## Run Semgrep SAST and inventory suppression markers in the mounted target
+	@rm -f "$(SEMGREP_REPORT)" "$(SUPPRESSIONS_REPORT)"
+	@./scripts/find-suppressions.py "$(TARGET_DIR)" "$(OUTPUT_DIR)"
 	@semgrep scan \
 		--config p/default \
 		--metrics=off \

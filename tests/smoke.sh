@@ -14,6 +14,9 @@ printf '<project/>\n' > "$TMP/target/pom.xml"
 printf '\312\376\272\276' > "$TMP/target/target/classes/App.class"
 # Target-owned scanner settings that the toolbox must never apply.
 printf 'target/app.py:generic-api-key:1\n' > "$TMP/target/.gitleaksignore"
+printf 'import os\nos.system("x")  # nosec\n' > "$TMP/target/hidden.py"
+printf 'gitleaks:allow\0' > "$TMP/target/blob.bin"
+ln -s /etc/passwd "$TMP/target/escape"
 
 # Fail a stub unless the toolbox passed the flag that keeps target settings out.
 require() {
@@ -144,7 +147,7 @@ cp "$ROOT/Makefile" "$TMP/Makefile"
 )
 
 for report in \
-  semgrep.json gitleaks.json osv.json trivy.json checkov.json sbom.cdx.json \
+  semgrep.json suppressions.json gitleaks.json osv.json trivy.json checkov.json sbom.cdx.json \
   bandit.json njsscan.json gosec.json findsecbugs.xml language-profile.json; do
   test -s "$TMP/output/$report" || { echo "missing report: $report" >&2; exit 1; }
 done
@@ -168,6 +171,12 @@ for tool in ("semgrep", "gitleaks", "osv-scanner", "trivy", "checkov", "syft", "
     digest = hashlib.sha256((output / entry["report"]).read_bytes()).hexdigest()
     assert entry["report_sha256"] == digest, (tool, entry)
     assert entry["status"] == "COMPLETED", entry
+assert reports["suppression-inventory"]["version"] == manifest["toolbox"]["version"], reports
+suppressions = json.loads((output / "suppressions.json").read_text(encoding="utf-8"))
+assert suppressions["markers"] == [{"file": "hidden.py", "line": 2, "marker": "nosec"}], suppressions
+assert suppressions["settings_files"] == [".gitleaksignore"], suppressions
+assert suppressions["skipped"]["symlinks"] == 1 and suppressions["skipped"]["binary_files"] == 1, suppressions
+assert "os.system" not in json.dumps(suppressions), "line text must never be copied"
 live = [item.split(":")[0] for item in manifest["limitations"] if "at scan time" in item]
 assert live == ["semgrep", "osv-scanner", "trivy"], manifest["limitations"]
 PY

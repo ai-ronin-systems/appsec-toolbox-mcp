@@ -128,6 +128,7 @@ njsscan_files = {f["file_path"] for rule in njsscan.values() for f in rule.get("
 gitleaks_lines = {(f["File"], f["StartLine"]) for f in json.loads((out / "gitleaks.json").read_text())}
 gitleaks = {path for path, _ in gitleaks_lines}
 semgrep_lines = {(r["path"], r["start"]["line"]) for r in json.loads((out / "semgrep.json").read_text())["results"]}
+suppressions = json.loads((out / "suppressions.json").read_text())
 gosec = {i["file"].rsplit("/", 1)[-1] for i in json.loads((out / "gosec.json").read_text())["Issues"]}
 results = [
     check("hostile: target .checkov.yaml cannot load code", not (out / "TARGET_CODE_RAN").exists()),
@@ -139,6 +140,12 @@ results = [
     check("hostile: # nosemgrep does not hide a finding", ("target/app.py", 11) in semgrep_lines),
     check("hostile: gitleaks:allow does not hide a secret", ("target/app.py", 14) in gitleaks_lines),
     check("hostile: #nosec does not hide a gosec finding", "main.go" in gosec),
+    check("hostile: suppression markers inventoried", {
+        ("app.py", 11, "nosemgrep"), ("app.py", 14, "gitleaks:allow"), ("main.go", 9, "nosec")
+    } <= {(m["file"], m["line"], m["marker"]) for m in suppressions["markers"]}),
+    check("hostile: settings files inventoried", {
+        ".semgrepignore", ".bandit", ".njsscan", ".gitleaksignore", ".checkov.yaml"
+    } <= set(suppressions["settings_files"])),
 ]
 sys.exit(0 if all(results) else 1)
 PY

@@ -21,7 +21,7 @@ TOOL_VERSIONS = Path(os.environ.get("TOOLBOX_TOOL_VERSIONS", "/runner/tool-versi
 # Reports each exposed task produces: (tool, report file). Only these count for a run, so a
 # report left over from an earlier task is never attributed to this one.
 GENERIC = {
-    "security-semgrep": [("semgrep", "semgrep.json")],
+    "security-semgrep": [("semgrep", "semgrep.json"), ("suppression-inventory", "suppressions.json")],
     "security-gitleaks": [("gitleaks", "gitleaks.json")],
     "security-osv": [("osv-scanner", "osv.json")],
     "security-trivy": [("trivy", "trivy.json")],
@@ -29,6 +29,7 @@ GENERIC = {
     "supply-chain-sbom": [("syft", "sbom.cdx.json")],
 }
 LANGUAGE_TASKS = {"security-language", "appsec-full"}
+TOOLBOX_TOOLS = {"suppression-inventory", "language-profile"}
 # Inputs fetched at scan time rather than pinned in the image: the same snapshot scanned on
 # another day can produce different findings, so the manifest says so for each tool that ran.
 LIVE_DATA = {
@@ -111,7 +112,11 @@ def main() -> int:
 
     tools = []
     for tool, report, status, reason in rows:
-        entry = {"name": tool, "version": versions.get(tool), "status": status}
+        # Toolbox scripts carry the toolbox version.
+        version = versions.get(tool) or (
+            versions.get("appsec-toolbox-mcp") if tool in TOOLBOX_TOOLS else None
+        )
+        entry = {"name": tool, "version": version, "status": status}
         if reason:
             entry["reason"] = reason
         if report and (output / report).is_file():
