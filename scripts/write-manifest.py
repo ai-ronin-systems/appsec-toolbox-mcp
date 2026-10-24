@@ -53,20 +53,33 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _sha256sum_line(digest: str, name: bytes) -> bytes:
+    """Format one line exactly as GNU sha256sum does, escaping names it would escape."""
+    if not any(char in name for char in b"\\\n\r"):
+        return digest.encode() + b"  " + name + b"\n"
+    escaped = name.replace(b"\\", b"\\\\").replace(b"\n", b"\\n").replace(b"\r", b"\\r")
+    return b"\\" + digest.encode() + b"  " + escaped + b"\n"
+
+
 def target_fingerprint(target: Path) -> dict:
     """Hash the tree exactly like `find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
-    | sha256sum` run inside the target, so anyone can recompute it. Symlinks are not followed."""
-    files: list[str] = []
-    for directory, subdirs, names in os.walk(target):
+    | sha256sum` run inside the target, so anyone can recompute it. Symlinks are not followed.
+
+    Names are handled as raw bytes: a hostile repository can hold names that are not UTF-8.
+    """
+    root = os.fsencode(target)
+    files: list[bytes] = []
+    for directory, subdirs, names in os.walk(root):
         subdirs.sort()
         for name in names:
-            path = Path(directory, name)
-            if path.is_file() and not path.is_symlink():
-                files.append("./" + path.relative_to(target).as_posix())
-    files.sort(key=lambda name: name.encode())
+            path = os.path.join(directory, name)
+            if os.path.isfile(path) and not os.path.islink(path):
+                files.append(b"./" + os.path.relpath(path, root))
+    files.sort()
     listing = hashlib.sha256()
     for name in files:
-        listing.update(f"{sha256_file(target / name[2:])}  {name}\n".encode())
+        digest = sha256_file(Path(os.fsdecode(os.path.join(root, name[2:]))))
+        listing.update(_sha256sum_line(digest, name))
     return {
         "content_fingerprint": "sha256:" + listing.hexdigest(),
         "algorithm": "find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum",

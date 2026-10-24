@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 
@@ -24,6 +25,18 @@ def test_fingerprint_matches_the_documented_coreutils_pipeline(manifest, tmp_pat
 
     assert fingerprint["content_fingerprint"] == _coreutils_fingerprint(tmp_path)
     assert fingerprint["file_count"] == 3
+
+
+def test_fingerprint_handles_names_coreutils_escapes_or_that_are_not_utf8(manifest, tmp_path):
+    root = os.fsencode(tmp_path)
+    for name in (b"bad\xff.txt", b"new\nline", b"back\\slash", b"carriage\rreturn", b"plain"):
+        with open(os.path.join(root, name), "wb") as handle:
+            handle.write(name)
+
+    fingerprint = manifest.target_fingerprint(tmp_path)
+
+    assert fingerprint["content_fingerprint"] == _coreutils_fingerprint(tmp_path)
+    assert fingerprint["file_count"] == 5
 
 
 def _run(manifest, tmp_path, task, monkeypatch, offline=None):
