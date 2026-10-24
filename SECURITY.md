@@ -23,6 +23,7 @@ The provided Compose configuration uses:
 - read-only target mount;
 - writable output mount only;
 - all Linux capabilities dropped;
+- memory capped at 6 GB, including the `/tmp` tmpfs, and processes at 512;
 - `no-new-privileges`;
 - non-root execution (the host user via `HOST_UID`/`HOST_GID`, or uid 10001 by default);
 - Makefile MCP runtime state on the `/tmp` tmpfs only;

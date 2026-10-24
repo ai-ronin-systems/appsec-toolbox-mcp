@@ -9,6 +9,9 @@ services:
     # HOST_UID="$(id -u)" HOST_GID="$(id -g)" docker compose run ...
     user: "${HOST_UID:-10001}:${HOST_GID:-10001}"
     read_only: true
+    # The /tmp tmpfs counts toward the memory limit; scanners peak near 2 GB on small targets.
+    mem_limit: 6g
+    pids_limit: 512
     cap_drop:
       - ALL
     security_opt:

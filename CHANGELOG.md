@@ -7,6 +7,9 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Security
 
+- The documented `docker run` and Compose setups cap memory (6 GB, including the RAM-backed
+  `/tmp`) and processes (512). Scans of the samples peak near 2 GB and 100 processes; the image
+  test runs with these limits.
 - Checkov no longer contacts Prisma Cloud (`api0.prismacloud.io`) on each scan: it runs with
   `--skip-download`. Syft's update check is off.
 - Inline suppression comments in the audited repository no longer hide findings: Semgrep runs

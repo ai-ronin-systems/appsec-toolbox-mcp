@@ -1,6 +1,7 @@
 #!/bin/sh
-# Known-positive test of the real image: every scanner must run in the hardened container
-# from the README and report the issue planted for it in examples/vulnerable-sample.
+# Known-positive test of the real image: every scanner must run in the hardened container,
+# with the resource limits from the README, and report the issue planted for it in
+# examples/vulnerable-sample.
 # Needs Docker and network access (rule sets and vulnerability databases are fetched).
 set -eu
 
@@ -17,6 +18,7 @@ run() {
     --cap-drop=ALL \
     --security-opt=no-new-privileges:true \
     --tmpfs /tmp:rw,nosuid,nodev,size=3g \
+    --memory=6g --pids-limit=512 \
     --user "$(id -u):$(id -g)" \
     -e APPSEC_LANGS=auto \
     -v "$TARGET:/runner/target:ro" \
@@ -155,7 +157,7 @@ PY
 DATA="$OUT/offline-data"
 OFFLINE_OUT="$OUT/offline"
 mkdir -p "$DATA" "$OFFLINE_OUT"
-hardened="--read-only --cap-drop=ALL --security-opt=no-new-privileges:true --tmpfs /tmp:rw,nosuid,nodev,size=3g --user $(id -u):$(id -g)"
+hardened="--read-only --cap-drop=ALL --security-opt=no-new-privileges:true --tmpfs /tmp:rw,nosuid,nodev,size=3g --memory=6g --pids-limit=512 --user $(id -u):$(id -g)"
 # shellcheck disable=SC2086
 quiet docker run --rm $hardened -e OSV_ECOSYSTEMS=PyPI \
   -v "$DATA:/runner/offline-data:rw" "$IMAGE" make -s offline-data

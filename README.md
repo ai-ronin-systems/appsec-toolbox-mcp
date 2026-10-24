@@ -167,6 +167,7 @@ docker run --rm -i \
   --cap-drop=ALL \
   --security-opt=no-new-privileges:true \
   --tmpfs /tmp:rw,nosuid,nodev,size=3g \
+  --memory=6g --pids-limit=512 \
   --user "$(id -u):$(id -g)" \
   -e APPSEC_LANGS=auto \
   -v "$PWD/my-project:/runner/target:ro" \
@@ -182,7 +183,7 @@ TARGET_DIR="$PWD/my-project" OUTPUT_DIR="$PWD/appsec-output" \
   docker compose run --rm -T appsec-toolbox-mcp
 ```
 
-The `/tmp` tmpfs holds scanner caches, and Trivy's vulnerability database alone is about 1.6 GB, so it is sized at 3 GB. It is RAM-backed and the databases are fetched again on every run.
+The `/tmp` tmpfs holds scanner caches, and Trivy's vulnerability database alone is about 1.6 GB, so it is sized at 3 GB. It is RAM-backed and the databases are fetched again on every run. Because it is RAM-backed, it counts toward `--memory`: the 6 GB limit leaves about 3 GB for the scanners, which peak near 2 GB on small repositories. `--pids-limit=512` caps fork bombs; scans use about 100 processes. Raise both for large repositories.
 
 Running as your own user (`--user` / `HOST_UID`) lets the scanners write to the output directory and leaves the reports owned by you. Makefile MCP's lock files live on the `/tmp` tmpfs, so the root filesystem stays read-only.
 
@@ -202,6 +203,7 @@ docker run --rm --read-only --cap-drop=ALL --security-opt=no-new-privileges:true
 # 2. No network at all: scan from that data, mounted read-only.
 docker run --rm -i --network none --read-only --cap-drop=ALL \
   --security-opt=no-new-privileges:true --tmpfs /tmp:rw,nosuid,nodev,size=3g \
+  --memory=6g --pids-limit=512 \
   --user "$(id -u):$(id -g)" -e APPSEC_OFFLINE=1 \
   -v "$PWD/my-project:/runner/target:ro" \
   -v "$PWD/appsec-data:/runner/offline-data:ro" \

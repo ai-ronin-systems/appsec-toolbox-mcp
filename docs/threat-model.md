@@ -78,7 +78,7 @@ What an attacker who controls the repository wants:
 | A9 | Scanner exploit escapes to the host | A crafted file that triggers a parser bug in a scanner | Read-only root filesystem and target mount. All capabilities dropped. `no-new-privileges`. Non-root user. `nosuid,nodev` tmpfs. No Docker socket. Only `/runner/output` is writable. | A kernel or runtime escape. Use a VM or gVisor for very high-risk code. |
 | A10 | Exfiltration over the network | A scanner exploit sending the source to an attacker | Semgrep metrics are off. Checkov runs with `--skip-download` and Syft without its update check, so neither calls home. No credentials are present to steal. | **Online mode (default):** Semgrep rules, OSV, and the Trivy DB need the network, so a compromised scanner could send out the target, and OSV receives package names and versions. **Offline mode** (`APPSEC_OFFLINE=1` with `--network none`) removes both; the image test runs the full bundle that way. |
 | A11 | Symlinks out of the target | `target/x -> /etc` or `-> /runner/output` | The fingerprint does not follow symlinks. The container holds nothing secret, and the output mount is the only writable path. | Scanners may report on container files a symlink points to. |
-| A12 | Exhaustion | A zip bomb, a huge repository, a regex-hostile file | Per-task timeouts (30 min, 60 min for `appsec-full`). A 3 GB tmpfs. Makefile MCP bounds output and kills the process group. | Memory and process count are not capped by default. Add `--memory` and `--pids-limit`. |
+| A12 | Exhaustion | A zip bomb, a huge repository, a regex-hostile file | Per-task timeouts (30 min, 60 min for `appsec-full`). A 3 GB tmpfs. Makefile MCP bounds output and kills the process group. The documented `docker run` and Compose setups cap memory at 6 GB (the tmpfs counts toward it) and processes at 512, and the image test runs with those limits. | Large repositories may need higher limits. A scan that hits them fails rather than hangs. |
 | A13 | Forged or swapped evidence | Reports from a different snapshot presented as this one | `run-manifest.json` holds a recomputable SHA-256 fingerprint of the target tree and the SHA-256 of each report this task wrote. The audit log records each run. | The manifest is not signed. Anyone with write access to `output/` can rewrite both. Hash or sign them where you store them. |
 | A14 | Results drift between runs | Same commit, different findings next week | Scanner versions are pinned and recorded. Online, the manifest lists each tool whose rules or advisories were fetched at scan time. Offline, it records the fetched data's date and SHA-256, and the same data gives the same findings. | Online findings depend on the scan date. Compare runs by manifest, not by memory. |
 | A15 | Compromised toolbox image | A tampered scanner binary, a swapped base image | Every downloaded binary is checked against its published SHA-256. The base image is pinned by digest. Python scanners are pinned by version in isolated virtualenvs. Releases are CI-gated, tested against a known-positive sample, and signed with GitHub build provenance. | Transitive Python dependencies are pinned by resolver, not by hash. |
@@ -90,7 +90,7 @@ What an attacker who controls the repository wants:
 2. The scanned path is fixed by the operator's mount. The agent cannot change it.
 3. No command owned by the target repository runs: no build, install, test, hook, or Makefile.
 4. Gitleaks, OSV-Scanner, and Trivy use toolbox-owned configuration, not the target's.
-5. In the documented `docker run` and Compose setups: the target is read-only, the root filesystem is read-only, no capabilities, no privilege escalation, non-root, no credentials.
+5. In the documented `docker run` and Compose setups: the target is read-only, the root filesystem is read-only, no capabilities, no privilege escalation, non-root, no credentials, and memory and process count are capped.
 6. Each run writes a manifest that ties report digests to a recomputable fingerprint of the scanned tree, and an audit line in `output/makefile-mcp-audit.jsonl`.
 7. Findings are evidence. A scan that finds issues succeeds; a scan that could not run says so.
 
@@ -107,7 +107,7 @@ What an attacker who controls the repository wants:
 
 - [ ] Run the released image and verify it: `gh attestation verify oci://ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:<version> --owner ai-ronin-systems`.
 - [ ] Use the documented flags: `--read-only`, `--cap-drop=ALL`, `--security-opt=no-new-privileges:true`, `--user`, target mounted `:ro`.
-- [ ] Add `--memory` and `--pids-limit` sized for your largest repository.
+- [ ] Keep `--memory` and `--pids-limit`, raised for your largest repository if needed.
 - [ ] Pass no credentials, tokens, SSH agents, or Docker sockets into the container.
 - [ ] For sensitive or actively hostile code, scan in offline mode with `--network none`.
 - [ ] Fetch the repository outside the container with an up-to-date Git, and do not run anything from it (no `make`, no install, no submodule scripts) before the scan.
