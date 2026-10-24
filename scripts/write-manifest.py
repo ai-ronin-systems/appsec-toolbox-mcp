@@ -29,6 +29,14 @@ GENERIC = {
     "supply-chain-sbom": [("syft", "sbom.cdx.json")],
 }
 LANGUAGE_TASKS = {"security-language", "appsec-full"}
+# Inputs fetched at scan time rather than pinned in the image: the same snapshot scanned on
+# another day can produce different findings, so the manifest says so for each tool that ran.
+LIVE_DATA = {
+    "semgrep": "semgrep: registry ruleset p/default is fetched at scan time and not pinned",
+    "osv-scanner": "osv-scanner: advisories come from the OSV API at scan time; package names "
+    "and versions are sent to it",
+    "trivy": "trivy: vulnerability database is downloaded at scan time",
+}
 STATUS = {"completed": "COMPLETED", "error": "ERROR"}
 
 
@@ -98,6 +106,8 @@ def main() -> int:
     if task in LANGUAGE_TASKS:
         language_rows, coverage = language_tools(output)
         rows += language_rows
+
+    limitations += [LIVE_DATA[tool] for tool, _, _, _ in rows if tool in LIVE_DATA]
 
     tools = []
     for tool, report, status, reason in rows:

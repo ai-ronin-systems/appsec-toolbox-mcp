@@ -5,6 +5,12 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ## Unreleased
 
+### Added
+
+- `run-manifest.json` lists, under `limitations`, each tool that ran whose results depend on
+  data fetched at scan time: Semgrep's registry ruleset, the OSV API (which receives package
+  names and versions), and Trivy's vulnerability database.
+
 ## 0.2.1 — 2026-10-15
 
 ### Fixed

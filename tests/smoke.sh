@@ -152,6 +152,8 @@ for tool in ("semgrep", "gitleaks", "osv-scanner", "trivy", "checkov", "syft", "
     digest = hashlib.sha256((output / entry["report"]).read_bytes()).hexdigest()
     assert entry["report_sha256"] == digest, (tool, entry)
     assert entry["status"] == "COMPLETED", entry
+live = [item.split(":")[0] for item in manifest["limitations"] if "at scan time" in item]
+assert live == ["semgrep", "osv-scanner", "trivy"], manifest["limitations"]
 PY
 
 python3 - "$TMP/output/language-profile.json" <<'PY'
@@ -199,6 +201,7 @@ with open(sys.argv[1], encoding="utf-8") as handle:
 assert manifest["run"]["task"] == "security-language", manifest["run"]
 names = {t["name"] for t in manifest["tools"]}
 assert "semgrep" not in names and "trivy" not in names, names
+assert not any("at scan time" in item for item in manifest["limitations"]), manifest
 status = {t["name"]: t["status"] for t in manifest["tools"]}
 assert status["bandit"] == "COMPLETED" and status["gosec"] == "SKIPPED_NOT_APPLICABLE", status
 PY
