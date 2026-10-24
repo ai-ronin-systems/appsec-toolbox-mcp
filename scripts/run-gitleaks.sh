@@ -22,6 +22,7 @@ gitleaks dir \
   --no-banner \
   --redact \
   --config "$CONFIG" \
+  --ignore-gitleaks-allow \
   --exit-code 0 \
   --report-format json \
   --report-path "$REPORT_PATH" \

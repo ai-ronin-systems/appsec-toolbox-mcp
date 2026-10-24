@@ -69,6 +69,8 @@ Scanners read settings from the scanned directory unless told otherwise. The too
 | Trivy | `.trivyignore` | `--ignorefile config/.trivyignore` |
 | OSV-Scanner | `osv-scanner.toml` | `--config config/osv-scanner.toml` |
 
+Inline suppression comments are disabled where the scanner allows it: Semgrep `--disable-nosem`, Bandit `--ignore-nosec`, Gitleaks `--ignore-gitleaks-allow`, gosec `-nosec`. Checkov, Trivy, and njsscan have no such flag.
+
 `--x-ignore-semgrepignore-files` is a Semgrep internal flag. If a Semgrep update drops it, the scan fails rather than silently honouring the target's file. Re-check this table on every scanner update; `examples/hostile-sample` covers each row except Trivy and OSV-Scanner.
 
 ## Update policy

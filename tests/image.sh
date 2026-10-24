@@ -125,7 +125,10 @@ semgrep = {r["path"] for r in json.loads((out / "semgrep.json").read_text())["re
 bandit = {r["test_id"] for r in json.loads((out / "bandit.json").read_text())["results"]}
 njsscan = json.loads((out / "njsscan.json").read_text()).get("nodejs", {})
 njsscan_files = {f["file_path"] for rule in njsscan.values() for f in rule.get("files", [])}
-gitleaks = {f["File"] for f in json.loads((out / "gitleaks.json").read_text())}
+gitleaks_lines = {(f["File"], f["StartLine"]) for f in json.loads((out / "gitleaks.json").read_text())}
+gitleaks = {path for path, _ in gitleaks_lines}
+semgrep_lines = {(r["path"], r["start"]["line"]) for r in json.loads((out / "semgrep.json").read_text())["results"]}
+gosec = {i["file"].rsplit("/", 1)[-1] for i in json.loads((out / "gosec.json").read_text())["Issues"]}
 results = [
     check("hostile: target .checkov.yaml cannot load code", not (out / "TARGET_CODE_RAN").exists()),
     check("hostile: target .checkov.yaml cannot skip checks", {"CKV_DOCKER_2", "CKV_DOCKER_3"} <= failed),
@@ -133,6 +136,9 @@ results = [
     check("hostile: target .bandit is ignored", "B602" in bandit),
     check("hostile: target .njsscan is ignored", any(path.endswith("web/server.js") for path in njsscan_files)),
     check("hostile: target .gitleaksignore is ignored", "target/app.py" in gitleaks),
+    check("hostile: # nosemgrep does not hide a finding", ("target/app.py", 11) in semgrep_lines),
+    check("hostile: gitleaks:allow does not hide a secret", ("target/app.py", 14) in gitleaks_lines),
+    check("hostile: #nosec does not hide a gosec finding", "main.go" in gosec),
 ]
 sys.exit(0 if all(results) else 1)
 PY

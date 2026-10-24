@@ -14,3 +14,6 @@ attempt fails:
 | `.bandit` excludes the repository and skips `B602` | Bandit reports `B602` |
 | `.njsscan` ignores `web/` | njsscan reports `web/server.js` |
 | `.gitleaksignore` lists the key in `app.py` | Gitleaks reports it |
+| `# nosemgrep` on a `shell=True` call in `app.py` | Semgrep reports it |
+| `# gitleaks:allow` on a key in `app.py` | Gitleaks reports it |
+| `// #nosec` on a command call in `main.go` | gosec reports it |

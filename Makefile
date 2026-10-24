@@ -33,6 +33,7 @@ security-semgrep: toolbox-check ## Run Semgrep SAST against the mounted target
 		--disable-version-check \
 		--no-git-ignore \
 		--x-ignore-semgrepignore-files \
+		--disable-nosem \
 		--json \
 		--output "$(SEMGREP_REPORT)" \
 		"$(TARGET_DIR)"

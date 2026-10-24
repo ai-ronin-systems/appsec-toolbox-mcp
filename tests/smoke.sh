@@ -20,7 +20,7 @@ require() {
   printf 'case " $* " in *" %s "*) ;; *) echo "%s must be called with %s" >&2; exit 3 ;; esac\n' "$2" "$1" "$2"
 }
 
-{ printf '#!/bin/sh\nset -eu\n'; require semgrep --x-ignore-semgrepignore-files; } > "$TMP/bin/semgrep"
+{ printf '#!/bin/sh\nset -eu\n'; require semgrep --x-ignore-semgrepignore-files; require semgrep --disable-nosem; } > "$TMP/bin/semgrep"
 cat >> "$TMP/bin/semgrep" <<'SCANNER'
 out=
 while [ "$#" -gt 0 ]; do
@@ -30,9 +30,8 @@ done
 printf '{"results":[]}\n' > "$out"
 SCANNER
 
-cat > "$TMP/bin/gitleaks" <<'SCANNER'
-#!/bin/sh
-set -eu
+{ printf '#!/bin/sh\nset -eu\n'; require gitleaks --ignore-gitleaks-allow; } > "$TMP/bin/gitleaks"
+cat >> "$TMP/bin/gitleaks" <<'SCANNER'
 out=
 while [ "$#" -gt 0 ]; do
   [ "$1" = "--report-path" ] && { shift; out=$1; }
@@ -111,9 +110,8 @@ printf '{"errors":[],"nodejs":{"eval_nodejs":{"files":[]}},"templates":{}}\n' > 
 exit 1
 SCANNER
 
-cat > "$TMP/bin/gosec" <<'SCANNER'
-#!/bin/sh
-set -eu
+{ printf '#!/bin/sh\nset -eu\n'; require gosec -nosec; } > "$TMP/bin/gosec"
+cat >> "$TMP/bin/gosec" <<'SCANNER'
 out=
 while [ "$#" -gt 0 ]; do
   case "$1" in

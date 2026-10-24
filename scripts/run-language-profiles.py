@@ -373,7 +373,8 @@ def main() -> int:
         result = run_scanner(
             "gosec",
             "go",
-            ["gosec", "-no-fail", "-fmt=json", f"-out={go_report}", "./..."],
+            # -nosec: the target's "#nosec" comments must not hide findings.
+            ["gosec", "-no-fail", "-nosec", "-fmt=json", f"-out={go_report}", "./..."],
             go_report,
             output,
             cwd=target,

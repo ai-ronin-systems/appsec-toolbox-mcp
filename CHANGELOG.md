@@ -7,6 +7,8 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Security
 
+- Inline suppression comments in the audited repository no longer hide findings: Semgrep runs
+  with `--disable-nosem`, Gitleaks with `--ignore-gitleaks-allow`, and gosec with `-nosec`.
 - The audited repository's scanner settings files no longer hide findings: `.semgrepignore`,
   `.bandit`, `.njsscan`, and a root `.gitleaksignore` are all ignored. Bandit and njsscan get
   toolbox config files, and Gitleaks scans a copy without the root `.gitleaksignore`, which it
