@@ -25,23 +25,9 @@ ALIASES = {
     "go": "go",
     "golang": "go",
 }
-PRUNE_DIRS = {
-    ".git",
-    ".hg",
-    ".svn",
-    ".tox",
-    ".venv",
-    "venv",
-    "node_modules",
-    "vendor",
-    "dist",
-    "build",
-    "target",
-    "out",
-    "coverage",
-    ".pytest_cache",
-    ".mypy_cache",
-}
+# Only version-control metadata is skipped. The audited repository chooses its own layout, so
+# skipping names like build/ or vendor/ would let it hide code from profile selection.
+PRUNE_DIRS = {".git", ".hg", ".svn"}
 MARKERS = {
     "python": {
         "pyproject.toml",

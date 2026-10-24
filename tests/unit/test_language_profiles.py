@@ -28,14 +28,21 @@ def test_invalid_selection_is_rejected(profiles, requested):
         profiles.parse_selection(requested, {})
 
 
-def test_detection_uses_markers_and_suffixes_and_prunes_vendored_trees(profiles, tmp_path):
+def test_detection_uses_markers_and_suffixes_and_skips_only_vcs_metadata(profiles, tmp_path):
     (tmp_path / "pom.xml").write_text("<project/>")
     (tmp_path / "web").mkdir()
     (tmp_path / "web" / "App.TSX").write_text("")
-    (tmp_path / "node_modules" / "dep").mkdir(parents=True)
-    (tmp_path / "node_modules" / "dep" / "x.py").write_text("")
+    (tmp_path / ".git" / "hooks").mkdir(parents=True)
+    (tmp_path / ".git" / "hooks" / "x.go").write_text("")
+    # A hostile repository chooses its layout: code under build/ must still select a profile.
+    (tmp_path / "build").mkdir()
+    (tmp_path / "build" / "app.py").write_text("")
 
-    assert profiles.detect_languages(tmp_path) == {"java": ["pom.xml"], "node": ["web/App.TSX"]}
+    assert profiles.detect_languages(tmp_path) == {
+        "python": ["build/app.py"],
+        "java": ["pom.xml"],
+        "node": ["web/App.TSX"],
+    }
 
 
 def test_detection_evidence_is_capped(profiles, tmp_path):

@@ -7,6 +7,10 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Security
 
+- A file name that is not valid UTF-8 no longer crashes the manifest writer and fails every
+  task. Names that `sha256sum` escapes now fingerprint the way the documented command does.
+- Code kept under `build/`, `dist/`, `vendor/`, `target/`, or similar directories now selects
+  its language profile. Only version-control metadata is skipped during detection.
 - The documented `docker run` and Compose setups cap memory (6 GB, including the RAM-backed
   `/tmp`) and processes (512). Scans of the samples peak near 2 GB and 100 processes; the image
   test runs with these limits.
