@@ -76,10 +76,13 @@ cat > "$TMP/bin/bandit" <<'SCANNER'
 #!/bin/sh
 set -eu
 out=
+ignore_nosec=
 while [ "$#" -gt 0 ]; do
   [ "$1" = "--output" ] && { shift; out=$1; }
+  [ "$1" = "--ignore-nosec" ] && ignore_nosec=1
   shift || true
 done
+[ -n "$ignore_nosec" ] || { echo "bandit must ignore target-owned # nosec comments" >&2; exit 3; }
 printf '{"results":[],"errors":[]}\n' > "$out"
 SCANNER
 
