@@ -9,6 +9,8 @@ IMAGE=${IMAGE:-appsec-toolbox-mcp:dev}
 OUT=$(mktemp -d)
 trap 'rm -rf "$OUT"' EXIT HUP INT TERM
 
+TARGET="$ROOT/examples/vulnerable-sample"
+RUN_OUT=$OUT
 run() {
   docker run --rm \
     --read-only \
@@ -17,8 +19,8 @@ run() {
     --tmpfs /tmp:rw,nosuid,nodev,size=3g \
     --user "$(id -u):$(id -g)" \
     -e APPSEC_LANGS=auto \
-    -v "$ROOT/examples/vulnerable-sample:/runner/target:ro" \
-    -v "$OUT:/runner/output:rw" \
+    -v "$TARGET:/runner/target:ro" \
+    -v "$RUN_OUT:/runner/output:rw" \
     "$IMAGE" "$@"
 }
 
@@ -89,6 +91,37 @@ results = [
     check("manifest: pinned tool versions recorded", all(t["version"] for t in manifest["tools"] if t["name"] != "language-profile")
         and manifest["toolbox"]["version"] and manifest["toolbox"]["makefile_mcp"]),
     check("audit log: appsec-full passed", [(r["task"], r["status"]) for r in audit] == [("appsec-full", "passed")]),
+]
+sys.exit(0 if all(results) else 1)
+PY
+
+# A hostile repository tries to run its own code and hide its findings through target-owned
+# scanner configuration. Every attempt must fail.
+TARGET="$ROOT/examples/hostile-sample"
+HOSTILE="$OUT/hostile"
+RUN_OUT=$HOSTILE
+mkdir -p "$HOSTILE"
+quiet run makefile-mcp run security-checkov
+
+python3 - "$HOSTILE" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+out = Path(sys.argv[1])
+
+
+def check(label, ok):
+    print(f"{'ok' if ok else 'FAIL'}  {label}")
+    return ok
+
+
+checkov = json.loads((out / "checkov.json").read_text(encoding="utf-8"))
+checkov = checkov if isinstance(checkov, list) else [checkov]
+failed = {c["check_id"] for report in checkov for c in report["results"]["failed_checks"]}
+results = [
+    check("hostile: target .checkov.yaml cannot load code", not (out / "TARGET_CODE_RAN").exists()),
+    check("hostile: target .checkov.yaml cannot skip checks", {"CKV_DOCKER_2", "CKV_DOCKER_3"} <= failed),
 ]
 sys.exit(0 if all(results) else 1)
 PY

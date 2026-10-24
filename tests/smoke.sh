@@ -55,6 +55,11 @@ SCANNER
 cat > "$TMP/bin/checkov" <<'SCANNER'
 #!/bin/sh
 set -eu
+for arg in "$@"; do
+  case "$arg" in
+    -d|--directory) echo "checkov would load the target's .checkov.yaml" >&2; exit 3 ;;
+  esac
+done
 printf '{"check_type":"terraform","results":{"passed_checks":[],"failed_checks":[],"skipped_checks":[]}}\n'
 SCANNER
 

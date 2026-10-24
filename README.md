@@ -213,7 +213,7 @@ Findings are evidence, not execution errors:
 - FindSecBugs findings remain XML evidence; operational scanner failure still fails collection.
 - Reports remain in each scanner's native structured format.
 
-The OSV scan uses `--no-resolve` to avoid dependency-resolution behavior against an untrusted project. Gitleaks, OSV-Scanner, and Trivy are given toolbox-owned policy/ignore files rather than trusting target-owned scanner configuration. Semgrep is run with Git ignore handling disabled. Checkov is restricted to static IaC/CI configuration frameworks and does not enable external checks, package SCA, secret scanning, or external Terraform module downloads. Language specialist scanners do not invoke package-manager installs, project builds, tests, remediation, or application entrypoints.
+The OSV scan uses `--no-resolve` to avoid dependency-resolution behavior against an untrusted project. Gitleaks, OSV-Scanner, and Trivy are given toolbox-owned policy/ignore files rather than trusting target-owned scanner configuration. Semgrep is run with Git ignore handling disabled. Checkov is restricted to static IaC/CI configuration frameworks, never reads the target's `.checkov.yaml` (which could load Python checks from the target), and does not enable external checks, package SCA, secret scanning, or external Terraform module downloads. Language specialist scanners do not invoke package-manager installs, project builds, tests, remediation, or application entrypoints.
 
 ## Network and privacy
 

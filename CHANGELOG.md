@@ -7,6 +7,10 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Security
 
+- Checkov no longer reads the audited repository's `.checkov.yaml`. That file could name
+  `external-checks-dir` and make Checkov import and run the repository's Python, and could
+  skip checks. Checkov loads it only when `--directory` and its path are separate arguments,
+  so the toolbox passes `--directory=target`. A hostile fixture in the image test proves it.
 - Every downloaded scanner binary is checked against its published SHA-256, and the base
   image is pinned by digest, with Dependabot proposing updates.
 - Bandit ignores `# nosec` comments, so the audited repository cannot hide its own findings.

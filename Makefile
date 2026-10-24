@@ -67,10 +67,12 @@ security-trivy: toolbox-check ## Scan vulnerabilities, misconfigurations, secret
 		"$(TARGET_DIR)"
 	$(manifest)
 
+# --directory=PATH is one argv item on purpose: Checkov loads PATH/.checkov.yaml only when the
+# flag and the path are separate arguments, and that file can name external checks to import.
 security-checkov: toolbox-check ## Scan IaC and CI/CD configuration with Checkov
 	@rm -f "$(CHECKOV_REPORT)"
 	@checkov \
-		--directory "$(TARGET_DIR)" \
+		--directory="$(TARGET_DIR)" \
 		--framework argo_workflows arm bicep bitbucket_pipelines cloudformation dockerfile github_actions gitlab_ci helm kubernetes kustomize openapi serverless terraform terraform_plan \
 		--output json \
 		--quiet \
