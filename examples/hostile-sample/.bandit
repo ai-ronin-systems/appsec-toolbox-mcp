@@ -1,0 +1,4 @@
+# Hostile: exclude the repository and skip the shell=True test.
+[bandit]
+exclude = /runner/target,target
+skips = B602,B404

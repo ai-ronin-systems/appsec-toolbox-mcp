@@ -10,3 +10,7 @@ attempt fails:
 | --- | --- |
 | `.checkov.yaml` names `checks/` as external checks, which write `output/TARGET_CODE_RAN` | the file never appears |
 | `.checkov.yaml` skips the Dockerfile checks | Checkov still reports them |
+| `.semgrepignore` hides `*.py` and `web/` | Semgrep reports `app.py` |
+| `.bandit` excludes the repository and skips `B602` | Bandit reports `B602` |
+| `.njsscan` ignores `web/` | njsscan reports `web/server.js` |
+| `.gitleaksignore` lists the key in `app.py` | Gitleaks reports it |

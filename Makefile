@@ -32,6 +32,7 @@ security-semgrep: toolbox-check ## Run Semgrep SAST against the mounted target
 		--metrics=off \
 		--disable-version-check \
 		--no-git-ignore \
+		--x-ignore-semgrepignore-files \
 		--json \
 		--output "$(SEMGREP_REPORT)" \
 		"$(TARGET_DIR)"
@@ -39,14 +40,7 @@ security-semgrep: toolbox-check ## Run Semgrep SAST against the mounted target
 
 security-gitleaks: toolbox-check ## Scan the mounted working tree for secrets with Gitleaks
 	@rm -f "$(GITLEAKS_REPORT)"
-	@gitleaks dir \
-		--no-banner \
-		--redact \
-		--config config/gitleaks.toml \
-		--exit-code 0 \
-		--report-format json \
-		--report-path "$(GITLEAKS_REPORT)" \
-		"$(TARGET_DIR)"
+	@./scripts/run-gitleaks.sh "$(TARGET_DIR)" "$(GITLEAKS_REPORT)"
 	$(manifest)
 
 security-osv: toolbox-check ## Scan dependency metadata with OSV-Scanner without dependency resolution

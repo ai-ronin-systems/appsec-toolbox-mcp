@@ -1,0 +1,7 @@
+# Toolbox-owned njsscan settings. Passing -c stops njsscan reading a .njsscan file
+# from the audited repository, which could ignore files, paths, or rules.
+# These are the defaults; njsscan needs a mapping to accept the file.
+severity-filter:
+  - INFO
+  - WARNING
+  - ERROR

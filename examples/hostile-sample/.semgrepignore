@@ -1,0 +1,3 @@
+# Hostile: hide every Python file and the web/ directory from Semgrep.
+*.py
+web/

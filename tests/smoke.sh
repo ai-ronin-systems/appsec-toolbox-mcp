@@ -12,10 +12,16 @@ printf 'module example.invalid/test\ngo 1.25\n' > "$TMP/target/go.mod"
 printf '{"dependencies":{}}\n' > "$TMP/target/package.json"
 printf '<project/>\n' > "$TMP/target/pom.xml"
 printf '\312\376\272\276' > "$TMP/target/target/classes/App.class"
+# Target-owned scanner settings that the toolbox must never apply.
+printf 'target/app.py:generic-api-key:1\n' > "$TMP/target/.gitleaksignore"
 
-cat > "$TMP/bin/semgrep" <<'SCANNER'
-#!/bin/sh
-set -eu
+# Fail a stub unless the toolbox passed the flag that keeps target settings out.
+require() {
+  printf 'case " $* " in *" %s "*) ;; *) echo "%s must be called with %s" >&2; exit 3 ;; esac\n' "$2" "$1" "$2"
+}
+
+{ printf '#!/bin/sh\nset -eu\n'; require semgrep --x-ignore-semgrepignore-files; } > "$TMP/bin/semgrep"
+cat >> "$TMP/bin/semgrep" <<'SCANNER'
 out=
 while [ "$#" -gt 0 ]; do
   [ "$1" = "--output" ] && { shift; out=$1; }
@@ -30,8 +36,11 @@ set -eu
 out=
 while [ "$#" -gt 0 ]; do
   [ "$1" = "--report-path" ] && { shift; out=$1; }
+  source=$1
   shift || true
 done
+[ ! -e "$source/.gitleaksignore" ] || { echo "gitleaks would apply the target's .gitleaksignore" >&2; exit 3; }
+[ -e "$source/app.py" ] || { echo "gitleaks scanned a copy without the target files" >&2; exit 3; }
 printf '[]\n' > "$out"
 SCANNER
 
@@ -77,9 +86,8 @@ done
 printf '{"bomFormat":"CycloneDX","components":[]}\n' > "$out"
 SCANNER
 
-cat > "$TMP/bin/bandit" <<'SCANNER'
-#!/bin/sh
-set -eu
+{ printf '#!/bin/sh\nset -eu\n'; require bandit --ini; } > "$TMP/bin/bandit"
+cat >> "$TMP/bin/bandit" <<'SCANNER'
 out=
 ignore_nosec=
 while [ "$#" -gt 0 ]; do
@@ -91,9 +99,8 @@ done
 printf '{"results":[],"errors":[]}\n' > "$out"
 SCANNER
 
-cat > "$TMP/bin/njsscan" <<'SCANNER'
-#!/bin/sh
-set -eu
+{ printf '#!/bin/sh\nset -eu\n'; require njsscan -c; } > "$TMP/bin/njsscan"
+cat >> "$TMP/bin/njsscan" <<'SCANNER'
 out=
 while [ "$#" -gt 0 ]; do
   [ "$1" = "-o" ] && { shift; out=$1; }
@@ -130,6 +137,7 @@ SCANNER
 
 chmod +x "$TMP/bin/"*
 cp -R "$ROOT/scripts" "$TMP/scripts"
+cp -R "$ROOT/config" "$TMP/config"
 cp "$ROOT/Makefile" "$TMP/Makefile"
 
 (
@@ -219,7 +227,6 @@ PY
 # Run through Makefile MCP itself, not plain make: its governed environment policy decides
 # which variables reach the Makefile. APPSEC_LANGS must survive that boundary.
 cp "$ROOT/.makefile-mcp.yaml" "$TMP/.makefile-mcp.yaml"
-cp -R "$ROOT/config" "$TMP/config"
 rm -f "$TMP/output/"*
 (
   cd "$TMP"

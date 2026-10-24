@@ -35,7 +35,7 @@ Some generic scanners need outbound network access for rules or advisory databas
 
 The default targets are passive scanners. They must not intentionally execute the audited project's build, test, package-install, remediation, deployment, or application commands.
 
-OSV-Scanner is run with dependency resolution disabled. Gitleaks, OSV-Scanner, and Trivy receive trusted runner-owned configuration/ignore files so target-owned scanner policy cannot silently suppress evidence. Semgrep is run with Git ignore handling disabled. Checkov is limited to static IaC/CI frameworks, uses packaged policies, never reads the target's `.checkov.yaml`, does not load external checks, and does not download external Terraform modules. No remediation command is exposed.
+OSV-Scanner is run with dependency resolution disabled. Every scanner receives trusted toolbox-owned settings so target-owned scanner policy cannot silently suppress evidence: config files for Gitleaks, OSV-Scanner, Trivy, Bandit, and njsscan; Semgrep ignores `.gitignore` and `.semgrepignore`; a root `.gitleaksignore` is excluded from the copy Gitleaks scans. A hostile fixture in the image test checks each one. Checkov is limited to static IaC/CI frameworks, uses packaged policies, never reads the target's `.checkov.yaml`, does not load external checks, and does not download external Terraform modules. No remediation command is exposed.
 
 Language specialists preserve the same boundary:
 

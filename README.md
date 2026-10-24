@@ -42,7 +42,7 @@ The audited repository is the attacker, and the agent reading its reports may be
 | Protected | Not protected |
 | --- | --- |
 | Target builds, installs, hooks, and Makefiles never run. | Scanner parser bugs; the container is the boundary. |
-| Target-owned scanner configs cannot suppress Gitleaks, OSV, or Trivy findings. | Inline suppressions such as `# nosemgrep` (Bandit's `# nosec` is ignored). |
+| Target-owned scanner settings files cannot suppress findings or load code. | Inline suppressions such as `# nosemgrep` (Bandit's `# nosec` is ignored). |
 | The agent cannot pick the target or run anything but the eight scans. | An agent that misreports what the reports say. |
 | No credentials in the container; read-only, unprivileged, non-root. | Exfiltration by a compromised scanner: the network stays on for rule and advisory data. |
 | Each run's manifest ties report digests to a fingerprint of the scanned tree. | Tampering by anyone who can write `output/`; the manifest is not signed. |
@@ -213,7 +213,7 @@ Findings are evidence, not execution errors:
 - FindSecBugs findings remain XML evidence; operational scanner failure still fails collection.
 - Reports remain in each scanner's native structured format.
 
-The OSV scan uses `--no-resolve` to avoid dependency-resolution behavior against an untrusted project. Gitleaks, OSV-Scanner, and Trivy are given toolbox-owned policy/ignore files rather than trusting target-owned scanner configuration. Semgrep is run with Git ignore handling disabled. Checkov is restricted to static IaC/CI configuration frameworks, never reads the target's `.checkov.yaml` (which could load Python checks from the target), and does not enable external checks, package SCA, secret scanning, or external Terraform module downloads. Language specialist scanners do not invoke package-manager installs, project builds, tests, remediation, or application entrypoints.
+The OSV scan uses `--no-resolve` to avoid dependency-resolution behavior against an untrusted project. Every scanner uses toolbox-owned settings, never the target's: Gitleaks, OSV-Scanner, Trivy, Bandit, and njsscan get toolbox config files; Semgrep ignores `.gitignore` and `.semgrepignore`; a root `.gitleaksignore` is left out of a copy that Gitleaks scans instead. [`examples/hostile-sample`](examples/hostile-sample) tries each of these and `make test-image` checks that nothing is hidden. Checkov is restricted to static IaC/CI configuration frameworks, never reads the target's `.checkov.yaml` (which could load Python checks from the target), and does not enable external checks, package SCA, secret scanning, or external Terraform module downloads. Language specialist scanners do not invoke package-manager installs, project builds, tests, remediation, or application entrypoints.
 
 ## Network and privacy
 

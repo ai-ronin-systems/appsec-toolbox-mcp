@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+CONFIG = Path(__file__).resolve().parent.parent / "config"
 SUPPORTED = ("python", "java", "node", "go")
 ALIASES = {
     "py": "python",
@@ -280,6 +281,9 @@ def main() -> int:
                     "--exit-zero",
                     # The target is hostile: its "# nosec" comments must not hide findings.
                     "--ignore-nosec",
+                    # Toolbox-owned settings instead of the target's .bandit file.
+                    "--ini",
+                    str(CONFIG / "bandit.ini"),
                 ],
                 output / "bandit.json",
                 output,
@@ -328,7 +332,16 @@ def main() -> int:
         result = run_scanner(
             "njsscan",
             "node",
-            ["njsscan", "--json", "-o", str(node_report), str(target)],
+            [
+                "njsscan",
+                "--json",
+                # Toolbox-owned settings instead of the target's .njsscan file.
+                "-c",
+                str(CONFIG / "njsscan.yml"),
+                "-o",
+                str(node_report),
+                str(target),
+            ],
             node_report,
             output,
             # njsscan exits 1 when it reports findings; findings are evidence, not failure.

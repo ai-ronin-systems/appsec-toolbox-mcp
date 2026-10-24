@@ -55,6 +55,22 @@ The project intentionally does not default to `8.30.1`. A public regression repo
 
 Checkov is intentionally restricted to static IaC and CI/CD frameworks. The toolbox does not enable Checkov package SCA, secret scanning, remote organization configuration, external checks, or external Terraform module downloads; those would overlap existing providers or widen the passive-analysis boundary. Checkov runs with `--soft-fail`, so policy violations are retained as JSON evidence without turning the Make target into a failed collection task.
 
+## Target settings files
+
+Scanners read settings from the scanned directory unless told otherwise. The toolbox stops each one:
+
+| Scanner | Target file it would read | How the toolbox stops it |
+| --- | --- | --- |
+| Semgrep | `.gitignore`, `.semgrepignore` | `--no-git-ignore`, `--x-ignore-semgrepignore-files` |
+| Gitleaks | `.gitleaks.toml`, root `.gitleaksignore` | `--config`; scan a copy without the root `.gitleaksignore` |
+| Bandit | `.bandit` | `--ini config/bandit.ini` |
+| njsscan | `.njsscan` | `-c config/njsscan.yml` |
+| Checkov | `.checkov.yaml` (can load Python checks) | `--directory=target` as one argument |
+| Trivy | `.trivyignore` | `--ignorefile config/.trivyignore` |
+| OSV-Scanner | `osv-scanner.toml` | `--config config/osv-scanner.toml` |
+
+`--x-ignore-semgrepignore-files` is a Semgrep internal flag. If a Semgrep update drops it, the scan fails rather than silently honouring the target's file. Re-check this table on every scanner update; `examples/hostile-sample` covers each row except Trivy and OSV-Scanner.
+
 ## Update policy
 
 Tool updates should be small, reviewable changes:

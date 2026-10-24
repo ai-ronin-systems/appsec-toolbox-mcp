@@ -101,7 +101,9 @@ TARGET="$ROOT/examples/hostile-sample"
 HOSTILE="$OUT/hostile"
 RUN_OUT=$HOSTILE
 mkdir -p "$HOSTILE"
-quiet run makefile-mcp run security-checkov
+for task in security-checkov security-semgrep security-gitleaks security-language; do
+  quiet run makefile-mcp run "$task"
+done
 
 python3 - "$HOSTILE" <<'PY'
 import json
@@ -119,9 +121,18 @@ def check(label, ok):
 checkov = json.loads((out / "checkov.json").read_text(encoding="utf-8"))
 checkov = checkov if isinstance(checkov, list) else [checkov]
 failed = {c["check_id"] for report in checkov for c in report["results"]["failed_checks"]}
+semgrep = {r["path"] for r in json.loads((out / "semgrep.json").read_text())["results"]}
+bandit = {r["test_id"] for r in json.loads((out / "bandit.json").read_text())["results"]}
+njsscan = json.loads((out / "njsscan.json").read_text()).get("nodejs", {})
+njsscan_files = {f["file_path"] for rule in njsscan.values() for f in rule.get("files", [])}
+gitleaks = {f["File"] for f in json.loads((out / "gitleaks.json").read_text())}
 results = [
     check("hostile: target .checkov.yaml cannot load code", not (out / "TARGET_CODE_RAN").exists()),
     check("hostile: target .checkov.yaml cannot skip checks", {"CKV_DOCKER_2", "CKV_DOCKER_3"} <= failed),
+    check("hostile: target .semgrepignore is ignored", "target/app.py" in semgrep),
+    check("hostile: target .bandit is ignored", "B602" in bandit),
+    check("hostile: target .njsscan is ignored", any(path.endswith("web/server.js") for path in njsscan_files)),
+    check("hostile: target .gitleaksignore is ignored", "target/app.py" in gitleaks),
 ]
 sys.exit(0 if all(results) else 1)
 PY

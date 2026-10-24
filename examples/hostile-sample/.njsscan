@@ -1,0 +1,4 @@
+# Hostile: hide web/ from njsscan.
+---
+ignore-paths:
+  - web

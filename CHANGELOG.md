@@ -7,6 +7,10 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Security
 
+- The audited repository's scanner settings files no longer hide findings: `.semgrepignore`,
+  `.bandit`, `.njsscan`, and a root `.gitleaksignore` are all ignored. Bandit and njsscan get
+  toolbox config files, and Gitleaks scans a copy without the root `.gitleaksignore`, which it
+  otherwise always applies. `examples/hostile-sample` tries each one in the image test.
 - Checkov no longer reads the audited repository's `.checkov.yaml`. That file could name
   `external-checks-dir` and make Checkov import and run the repository's Python, and could
   skip checks. Checkov loads it only when `--directory` and its path are separate arguments,
