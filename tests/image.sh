@@ -31,6 +31,12 @@ quiet() {
   "$@" >>"$LOG" 2>&1 || { cat "$LOG" >&2; echo "image test: '$*' failed" >&2; exit 1; }
 }
 
+# The MCP Registry verifies ownership through this label.
+label=$(docker image inspect --format '{{ index .Config.Labels "io.modelcontextprotocol.server.name" }}' "$IMAGE")
+test "$label" = "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["name"])' "$ROOT/server.json")" \
+  || { echo "image test: MCP Registry label is '$label'" >&2; exit 1; }
+echo "ok  registry: ownership label matches server.json"
+
 # Every scanner is installed and executes (catches broken installs such as CRLF shebangs).
 quiet run make -s toolbox-versions
 

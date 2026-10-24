@@ -219,6 +219,12 @@ With Compose, set `APPSEC_OFFLINE=1 APPSEC_NETWORK=none OFFLINE_DATA_DIR="$PWD/a
 - `APPSEC_OFFLINE` is an operator setting like `APPSEC_LANGS`. The agent cannot change it, and `offline-data` is not an MCP tool.
 - The same commit then gives the same findings until you refresh the data.
 
+## MCP Registry
+
+The image is described for the official MCP Registry as `io.github.ai-ronin-systems/appsec-toolbox-mcp` in [`server.json`](server.json): an OCI package with the hardening flags, resource limits, and the two mounts as runtime arguments. The image carries the `io.modelcontextprotocol.server.name` label the registry checks for ownership. The release workflow publishes `server.json` after it pushes the image, with a short-lived GitHub OIDC login. Images up to 0.2.1 predate the label and are not listed.
+
+To release, bump `VERSION`, the `version` and image tag in `server.json`, and date the `CHANGELOG.md` section; the smoke test and the release workflow refuse a mismatch.
+
 ## Human/CI usage
 
 The same Makefile is directly usable without MCP when the tools are installed locally:

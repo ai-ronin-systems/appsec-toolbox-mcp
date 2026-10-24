@@ -120,8 +120,10 @@ RUN printf '{"appsec-toolbox-mcp":"%s","makefile-mcp":"%s","semgrep":"%s","gitle
       "$FINDSECBUGS_VERSION" "$SYFT_VERSION" "$GO_VERSION" > tool-versions.json \
  && python3 -m json.tool tool-versions.json >/dev/null
 
-# The source label links the GHCR package to this repository.
-LABEL org.opencontainers.image.title="appsec-toolbox-mcp" \
+# The source label links the GHCR package to this repository. The MCP Registry reads
+# io.modelcontextprotocol.server.name to verify that this image belongs to the server.json name.
+LABEL io.modelcontextprotocol.server.name="io.github.ai-ronin-systems/appsec-toolbox-mcp" \
+      org.opencontainers.image.title="appsec-toolbox-mcp" \
       org.opencontainers.image.description="Passive AppSec scanners exposed to AI agents as governed MCP tools via Makefile MCP." \
       org.opencontainers.image.source="https://github.com/ai-ronin-systems/appsec-toolbox-mcp" \
       org.opencontainers.image.licenses="Apache-2.0"

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ai-ronin-systems/appsec-toolbox-mcp",
+  "title": "AppSec Toolbox MCP",
+  "description": "Passive AppSec scanners as eight parameterless MCP tools; the audited repository is data.",
+  "websiteUrl": "https://github.com/ai-ronin-systems/appsec-toolbox-mcp",
+  "repository": {
+    "url": "https://github.com/ai-ronin-systems/appsec-toolbox-mcp",
+    "source": "github"
+  },
+  "version": "0.2.1",
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        {"type": "named", "name": "--read-only", "description": "Read-only root filesystem"},
+        {"type": "named", "name": "--cap-drop", "value": "ALL", "description": "Drop all Linux capabilities"},
+        {"type": "named", "name": "--security-opt", "value": "no-new-privileges:true", "description": "No privilege escalation"},
+        {"type": "named", "name": "--tmpfs", "value": "/tmp:rw,nosuid,nodev,size=3g", "description": "Scanner caches; counts toward --memory"},
+        {"type": "named", "name": "--memory", "value": "6g", "description": "Memory cap, including the /tmp tmpfs"},
+        {"type": "named", "name": "--pids-limit", "value": "512", "description": "Process cap"},
+        {
+          "type": "named",
+          "name": "--mount",
+          "value": "type=bind,src={target_dir},dst=/runner/target,readonly",
+          "description": "The repository to audit, mounted read-only",
+          "isRequired": true,
+          "variables": {
+            "target_dir": {"description": "Absolute host path of the repository to audit", "format": "filepath", "isRequired": true}
+          }
+        },
+        {
+          "type": "named",
+          "name": "--mount",
+          "value": "type=bind,src={output_dir},dst=/runner/output",
+          "description": "Where reports, the run manifest, and the audit log are written",
+          "isRequired": true,
+          "variables": {
+            "output_dir": {"description": "Absolute host path for the evidence; must be writable by the container user", "format": "filepath", "isRequired": true}
+          }
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "APPSEC_LANGS",
+          "description": "Language profiles: auto, none, or a list such as python,node",
+          "default": "auto"
+        }
+      ]
+    }
+  ]
+}

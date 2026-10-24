@@ -303,6 +303,23 @@ assert "trivy: offline database updated 2026-09-30T00:00:00Z" in limitations, li
 PY
 rm -rf "$TMP/offline-data" "$TMP/calls.log"
 
+# MCP Registry metadata names this image, at the toolbox version, with its ownership label.
+python3 - "$ROOT" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+server = json.loads((root / "server.json").read_text(encoding="utf-8"))
+version = (root / "VERSION").read_text(encoding="utf-8").strip()
+package = server["packages"][0]
+assert server["version"] == version, (server["version"], version)
+assert package["identifier"] == f"ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:{version}", package
+label = re.search(r'io\.modelcontextprotocol\.server\.name="([^"]+)"', (root / "Dockerfile").read_text())
+assert label and label.group(1) == server["name"], label
+PY
+
 # Ensure the current Makefile MCP policy filename is present and the legacy name is absent.
 test -f "$ROOT/.makefile-mcp.yaml"
 test ! -e "$ROOT/.make-mcp.yaml"

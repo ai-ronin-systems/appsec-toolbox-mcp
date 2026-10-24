@@ -35,6 +35,9 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Added
 
+- MCP Registry metadata: `server.json` describes the image as an OCI package with its hardening
+  flags and mounts, the image carries the ownership label, and the release workflow publishes
+  it after pushing the image, using GitHub OIDC.
 - Unit tests for the scripts, and ruff lint and format checks, run by `make test` and CI.
 - Offline mode: `make offline-data` fetches Semgrep `p/default`, the Trivy databases, and OSV
   databases per ecosystem into a directory; scans with `APPSEC_OFFLINE=1` then run with

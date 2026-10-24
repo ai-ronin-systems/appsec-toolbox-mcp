@@ -40,13 +40,15 @@ jobs:
             exit 1
           fi
 
-      - name: Verify tag, VERSION, and CHANGELOG agree
+      - name: Verify tag, VERSION, CHANGELOG, and server.json agree
         run: |
           version="$(cat VERSION)"
           test "$GITHUB_REF_NAME" = "v${version}" \
             || { echo "::error::tag ${GITHUB_REF_NAME} does not match VERSION ${version}"; exit 1; }
           grep -Eq "^## ${version} — [0-9]{4}-[0-9]{2}-[0-9]{2}$" CHANGELOG.md \
             || { echo "::error::CHANGELOG.md has no dated section for ${version}"; exit 1; }
+          test "$(jq -r .version server.json)" = "$version" \
+            || { echo "::error::server.json version does not match VERSION ${version}"; exit 1; }
 
       - name: Build the image once
         run: docker build -t appsec-toolbox-mcp:release .
@@ -116,6 +118,41 @@ jobs:
           subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ needs.publish.outputs.digest }}
           push-to-registry: true
+
+  registry:
+    name: Publish to MCP Registry
+    # The registry verifies the pushed image's ownership label, so this runs after the push.
+    needs: [publish, attest]
+    runs-on: ubuntu-latest
+    # Short-lived GitHub OIDC login; no registry token is stored. Runs no project code.
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      MCP_PUBLISHER_VERSION: "1.8.1"
+      MCP_PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned, checksum-verified mcp-publisher
+        run: |
+          curl -fsSL -o mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/v${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum --check --strict
+          tar -xzf mcp-publisher.tar.gz mcp-publisher
+
+      - name: Verify server.json names the pushed image
+        run: |
+          test "$(jq -r '.packages[0].identifier' server.json)" = "${IMAGE}:${GITHUB_REF_NAME#v}" \
+            || { echo "::error::server.json identifier does not match ${IMAGE}:${GITHUB_REF_NAME#v}"; exit 1; }
+
+      - name: Log in with GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server.json
+        run: ./mcp-publisher publish
 
   github-release:
     name: Create GitHub release
