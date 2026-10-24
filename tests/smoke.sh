@@ -71,6 +71,7 @@ for arg in "$@"; do
     -d|--directory) echo "checkov would load the target's .checkov.yaml" >&2; exit 3 ;;
   esac
 done
+case " $* " in *" --skip-download "*) ;; *) echo "checkov must not contact Prisma Cloud" >&2; exit 3 ;; esac
 printf '{"check_type":"terraform","results":{"passed_checks":[],"failed_checks":[],"skipped_checks":[]}}\n'
 SCANNER
 

@@ -220,7 +220,7 @@ The OSV scan uses `--no-resolve` to avoid dependency-resolution behavior against
 
 ## Network and privacy
 
-The default image needs outbound network access for some generic scanner rule/advisory data. In particular, Semgrep's `p/default` registry ruleset and vulnerability databases may be fetched at scan time. Semgrep runs with metrics off, so it never sends project information; its `auto` config is not used because it requires metrics. Checkov uses its packaged policies and does not require a Prisma Cloud API key for the configured scan. Language-specific scanners are configured to avoid project dependency downloads; notably gosec runs with the Go module proxy disabled.
+The default image needs outbound network access for some generic scanner rule/advisory data. In particular, Semgrep's `p/default` registry ruleset and vulnerability databases may be fetched at scan time. Semgrep runs with metrics off, so it never sends project information; its `auto` config is not used because it requires metrics. Checkov uses its packaged policies and runs with `--skip-download`, so it does not contact Prisma Cloud; by default it would fetch guidelines from `api0.prismacloud.io` on every scan. Syft's update check is off, and Semgrep and Trivy skip their version checks. Language-specific scanners are configured to avoid project dependency downloads; notably gosec runs with the Go module proxy disabled.
 
 Do not pass repository credentials into this container.
 

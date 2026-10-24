@@ -74,6 +74,7 @@ security-checkov: toolbox-check ## Scan IaC and CI/CD configuration with Checkov
 		--output json \
 		--quiet \
 		--soft-fail \
+		--skip-download \
 		> "$(CHECKOV_REPORT)"
 	$(manifest)
 
@@ -84,7 +85,7 @@ security-language: toolbox-check ## Run applicable language-specific passive SAS
 
 supply-chain-sbom: toolbox-check ## Generate a CycloneDX JSON SBOM with Syft
 	@rm -f "$(SBOM_REPORT)"
-	@syft scan "dir:$(TARGET_DIR)" \
+	@SYFT_CHECK_FOR_APP_UPDATE=false syft scan "dir:$(TARGET_DIR)" \
 		--quiet \
 		--output "cyclonedx-json=$(SBOM_REPORT)"
 	$(manifest)

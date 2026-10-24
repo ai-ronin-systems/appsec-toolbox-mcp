@@ -7,6 +7,8 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Security
 
+- Checkov no longer contacts Prisma Cloud (`api0.prismacloud.io`) on each scan: it runs with
+  `--skip-download`. Syft's update check is off.
 - Inline suppression comments in the audited repository no longer hide findings: Semgrep runs
   with `--disable-nosem`, Gitleaks with `--ignore-gitleaks-allow`, and gosec with `-nosec`.
 - The audited repository's scanner settings files no longer hide findings: `.semgrepignore`,
