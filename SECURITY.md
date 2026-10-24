@@ -29,7 +29,7 @@ The provided Compose configuration uses:
 - no Docker socket;
 - no host credential mounts.
 
-Some generic scanners need outbound network access for rules or advisory databases. Network access is therefore not disabled globally by default.
+Some generic scanners need outbound network access for rules or advisory databases. Network access is therefore not disabled by default. Offline mode (`APPSEC_OFFLINE=1`, see the README) scans with `--network none` from data fetched beforehand.
 
 ## Scanner execution policy
 

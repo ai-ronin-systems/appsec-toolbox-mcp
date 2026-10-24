@@ -44,7 +44,7 @@ The audited repository is the attacker, and the agent reading its reports may be
 | Target builds, installs, hooks, and Makefiles never run. | Scanner parser bugs; the container is the boundary. |
 | Target-owned scanner settings files cannot suppress findings or load code. | Inline `trivy:ignore` and `njsscan-ignore` comments; Checkov lists its inline skips as `skipped_checks`. |
 | The agent cannot pick the target or run anything but the eight scans. | An agent that misreports what the reports say. |
-| No credentials in the container; read-only, unprivileged, non-root. | Exfiltration by a compromised scanner: the network stays on for rule and advisory data. |
+| No credentials in the container; read-only, unprivileged, non-root. | Exfiltration by a compromised scanner in online mode. [Offline mode](#offline-mode) runs with no network. |
 | Each run's manifest ties report digests to a fingerprint of the scanned tree. | Tampering by anyone who can write `output/`; the manifest is not signed. |
 
 ## Why this shape
@@ -188,6 +188,35 @@ Running as your own user (`--user` / `HOST_UID`) lets the scanners write to the 
 
 `makefile-mcp serve` uses stdio. This project does not add HTTP transport, authentication, a queue, a database, a workflow engine, or another command DSL.
 
+## Offline mode
+
+By default some scanners fetch rules and advisories while they scan. Offline mode removes the network from the scan container: fetch the data once, then scan with `--network none`.
+
+```bash
+# 1. With network access: fetch Semgrep p/default, the Trivy databases, and OSV databases.
+docker run --rm --read-only --cap-drop=ALL --security-opt=no-new-privileges:true \
+  --tmpfs /tmp:rw,nosuid,nodev,size=3g --user "$(id -u):$(id -g)" \
+  -v "$PWD/appsec-data:/runner/offline-data:rw" \
+  ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.1 make -s offline-data
+
+# 2. No network at all: scan from that data, mounted read-only.
+docker run --rm -i --network none --read-only --cap-drop=ALL \
+  --security-opt=no-new-privileges:true --tmpfs /tmp:rw,nosuid,nodev,size=3g \
+  --user "$(id -u):$(id -g)" -e APPSEC_OFFLINE=1 \
+  -v "$PWD/my-project:/runner/target:ro" \
+  -v "$PWD/appsec-data:/runner/offline-data:ro" \
+  -v "$PWD/appsec-output:/runner/output:rw" \
+  ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.1
+```
+
+With Compose, set `APPSEC_OFFLINE=1 APPSEC_NETWORK=none OFFLINE_DATA_DIR="$PWD/appsec-data"`.
+
+- The data takes about 3.5 GB, mostly the Trivy databases. Refresh it as often as you want fresh advisories.
+- OSV databases are fetched per ecosystem. `OSV_ECOSYSTEMS` (default `PyPI npm Maven Go crates.io RubyGems Packagist NuGet Pub Hex`) picks them. An ecosystem that was not fetched fails the OSV scan rather than reporting no vulnerabilities.
+- `offline-data/offline-data.json` records when each source was fetched and its SHA-256. The run manifest copies it and sets `run.network` to `offline`, so findings carry the age of the data behind them.
+- `APPSEC_OFFLINE` is an operator setting like `APPSEC_LANGS`. The agent cannot change it, and `offline-data` is not an MCP tool.
+- The same commit then gives the same findings until you refresh the data.
+
 ## Human/CI usage
 
 The same Makefile is directly usable without MCP when the tools are installed locally:
@@ -220,7 +249,7 @@ The OSV scan uses `--no-resolve` to avoid dependency-resolution behavior against
 
 ## Network and privacy
 
-The default image needs outbound network access for some generic scanner rule/advisory data. In particular, Semgrep's `p/default` registry ruleset and vulnerability databases may be fetched at scan time. Semgrep runs with metrics off, so it never sends project information; its `auto` config is not used because it requires metrics. Checkov uses its packaged policies and runs with `--skip-download`, so it does not contact Prisma Cloud; by default it would fetch guidelines from `api0.prismacloud.io` on every scan. Syft's update check is off, and Semgrep and Trivy skip their version checks. Language-specific scanners are configured to avoid project dependency downloads; notably gosec runs with the Go module proxy disabled.
+In online mode (the default), the image needs outbound network access for some generic scanner rule/advisory data. [Offline mode](#offline-mode) removes that need. In particular, Semgrep's `p/default` registry ruleset and vulnerability databases may be fetched at scan time. Semgrep runs with metrics off, so it never sends project information; its `auto` config is not used because it requires metrics. Checkov uses its packaged policies and runs with `--skip-download`, so it does not contact Prisma Cloud; by default it would fetch guidelines from `api0.prismacloud.io` on every scan. Syft's update check is off, and Semgrep and Trivy skip their version checks. Language-specific scanners are configured to avoid project dependency downloads; notably gosec runs with the Go module proxy disabled.
 
 Do not pass repository credentials into this container.
 

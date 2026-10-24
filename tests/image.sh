@@ -150,4 +150,57 @@ results = [
 sys.exit(0 if all(results) else 1)
 PY
 
+# Offline mode: fetch the data with network access, then run the full bundle with no network
+# at all and require the planted findings that depend on that data.
+DATA="$OUT/offline-data"
+OFFLINE_OUT="$OUT/offline"
+mkdir -p "$DATA" "$OFFLINE_OUT"
+hardened="--read-only --cap-drop=ALL --security-opt=no-new-privileges:true --tmpfs /tmp:rw,nosuid,nodev,size=3g --user $(id -u):$(id -g)"
+# shellcheck disable=SC2086
+quiet docker run --rm $hardened -e OSV_ECOSYSTEMS=PyPI \
+  -v "$DATA:/runner/offline-data:rw" "$IMAGE" make -s offline-data
+# shellcheck disable=SC2086
+quiet docker run --rm $hardened --network none -e APPSEC_LANGS=auto -e APPSEC_OFFLINE=1 \
+  -v "$ROOT/examples/vulnerable-sample:/runner/target:ro" \
+  -v "$DATA:/runner/offline-data:ro" \
+  -v "$OFFLINE_OUT:/runner/output:rw" \
+  "$IMAGE" makefile-mcp run appsec-full
+
+python3 - "$OFFLINE_OUT" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+out = Path(sys.argv[1])
+
+
+def load(name):
+    return json.loads((out / name).read_text(encoding="utf-8"))
+
+
+def check(label, ok):
+    print(f"{'ok' if ok else 'FAIL'}  {label}")
+    return ok
+
+
+semgrep = {r["check_id"] for r in load("semgrep.json")["results"]}
+osv = [
+    v
+    for result in load("osv.json").get("results", [])
+    for package in result.get("packages", [])
+    for v in package.get("vulnerabilities", [])
+]
+trivy = load("trivy.json").get("Results", [])
+manifest = load("run-manifest.json")
+results = [
+    check("offline: semgrep finds shell injection", any("subprocess" in rule for rule in semgrep)),
+    check("offline: osv finds vulnerable dependencies", len(osv) > 0),
+    check("offline: trivy finds vulnerable dependencies", any(r.get("Vulnerabilities") for r in trivy)),
+    check("offline: manifest records offline data", manifest["run"]["network"] == "offline"
+          and manifest["offline_data"]["semgrep"]["sha256"]
+          and not any("at scan time" in item for item in manifest["limitations"])),
+]
+sys.exit(0 if all(results) else 1)
+PY
+
 echo "image test: ok"

@@ -25,6 +25,7 @@ require() {
 
 { printf '#!/bin/sh\nset -eu\n'; require semgrep --x-ignore-semgrepignore-files; require semgrep --disable-nosem; } > "$TMP/bin/semgrep"
 cat >> "$TMP/bin/semgrep" <<'SCANNER'
+[ -z "${CALLS:-}" ] || echo "$(basename "$0") $*" >> "$CALLS"
 out=
 while [ "$#" -gt 0 ]; do
   [ "$1" = "--output" ] && { shift; out=$1; }
@@ -48,6 +49,7 @@ SCANNER
 
 cat > "$TMP/bin/osv-scanner" <<'SCANNER'
 #!/bin/sh
+[ -z "${CALLS:-}" ] || echo "$(basename "$0") $*" >> "$CALLS"
 printf '{"results":[{"packages":[]}]}\n'
 exit 1
 SCANNER
@@ -55,6 +57,7 @@ SCANNER
 cat > "$TMP/bin/trivy" <<'SCANNER'
 #!/bin/sh
 set -eu
+[ -z "${CALLS:-}" ] || echo "$(basename "$0") $*" >> "$CALLS"
 out=
 while [ "$#" -gt 0 ]; do
   [ "$1" = "--output" ] && { shift; out=$1; }
@@ -263,12 +266,49 @@ PY
   fi
 )
 
+# Offline mode: scanners read the fetched data, and the manifest says which data and when.
+rm -f "$TMP/output/"*
+if (cd "$TMP" && PATH="$TMP/bin:$PATH" APPSEC_OFFLINE=1 make -s security-semgrep >/dev/null 2>&1); then
+  echo "APPSEC_OFFLINE=1 must refuse to scan without offline data" >&2
+  exit 1
+fi
+if (cd "$TMP" && PATH="$TMP/bin:$PATH" APPSEC_OFFLINE=yes make -s security-semgrep >/dev/null 2>&1); then
+  echo "APPSEC_OFFLINE must accept only 0 or 1" >&2
+  exit 1
+fi
+mkdir -p "$TMP/offline-data/semgrep"
+cat > "$TMP/offline-data/offline-data.json" <<'JSON'
+{"fetched_at": "2026-10-01T00:00:00+00:00", "semgrep": {"ruleset": "p/default", "sha256": "ab"},
+ "osv": {"ecosystems": {"PyPI": {"sha256": "cd"}}}, "trivy": {"db_updated_at": "2026-09-30T00:00:00Z"}}
+JSON
+(
+  cd "$TMP"
+  PATH="$TMP/bin:$PATH" CALLS="$TMP/calls.log" APPSEC_OFFLINE=1 APPSEC_LANGS=none make appsec-full >/dev/null
+)
+grep -q '^semgrep .*--config offline-data/semgrep/p-default.yml' "$TMP/calls.log"
+grep -q '^osv-scanner .*--offline-vulnerabilities' "$TMP/calls.log"
+grep -q '^trivy .*--cache-dir offline-data/trivy --skip-db-update --skip-java-db-update' "$TMP/calls.log"
+python3 - "$TMP/output/run-manifest.json" <<'PY'
+import json
+import sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    manifest = json.load(handle)
+assert manifest["run"]["network"] == "offline", manifest["run"]
+assert manifest["offline_data"]["fetched_at"] == "2026-10-01T00:00:00+00:00", manifest
+limitations = manifest["limitations"]
+assert not any("at scan time" in item for item in limitations), limitations
+assert "semgrep: offline ruleset p/default fetched 2026-10-01T00:00:00+00:00" in limitations, limitations
+assert any(item.startswith("osv-scanner: offline databases") and "PyPI" in item for item in limitations)
+assert "trivy: offline database updated 2026-09-30T00:00:00Z" in limitations, limitations
+PY
+rm -rf "$TMP/offline-data" "$TMP/calls.log"
+
 # Ensure the current Makefile MCP policy filename is present and the legacy name is absent.
 test -f "$ROOT/.makefile-mcp.yaml"
 test ! -e "$ROOT/.make-mcp.yaml"
 
 # Ensure maintenance targets are explicitly hidden from Makefile MCP config.
-for task in toolbox-check toolbox-versions test test-image image; do
+for task in toolbox-check toolbox-versions offline-data test test-image image; do
   grep -A1 "^  ${task}:" "$ROOT/.makefile-mcp.yaml" | grep -q 'enabled: false'
 done
 

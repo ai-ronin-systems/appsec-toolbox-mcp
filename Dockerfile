@@ -96,7 +96,7 @@ COPY --chown=toolbox:toolbox scripts/ ./scripts/
 COPY --chown=toolbox:toolbox config/ ./config/
 # Makefile MCP keeps its task locks under /runner/.makefile-mcp. The root filesystem is
 # read-only at runtime, so that state lives on the /tmp tmpfs; the entrypoint creates it.
-RUN mkdir -p target output \
+RUN mkdir -p target output offline-data \
  && ln -s /tmp/makefile-mcp /runner/.makefile-mcp \
  && chown -R toolbox:toolbox /runner
 
@@ -105,7 +105,8 @@ ENV HOME=/tmp/home \
     XDG_CACHE_HOME=/tmp/cache \
     PYTHONUNBUFFERED=1 \
     PATH=/usr/local/go/bin:${PATH} \
-    APPSEC_LANGS=auto
+    APPSEC_LANGS=auto \
+    APPSEC_OFFLINE=0
 
 ENTRYPOINT ["./scripts/entrypoint.sh"]
 CMD ["makefile-mcp", "serve"]

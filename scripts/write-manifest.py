@@ -17,6 +17,7 @@ from pathlib import Path
 
 SCHEMA_VERSION = 1
 TOOL_VERSIONS = Path(os.environ.get("TOOLBOX_TOOL_VERSIONS", "/runner/tool-versions.json"))
+OFFLINE_DATA = Path("offline-data/offline-data.json")
 
 # Reports each exposed task produces: (tool, report file). Only these count for a run, so a
 # report left over from an earlier task is never attributed to this one.
@@ -90,6 +91,19 @@ def language_tools(output: Path) -> tuple[list[tuple[str, str | None, str, str |
     return rows, coverage
 
 
+def offline_limitations(data: dict, ran: list[str]) -> list[str]:
+    """Say which fetched data an offline scan used, so its age is visible next to the findings."""
+    fetched = data.get("fetched_at")
+    texts = {
+        "semgrep": f"semgrep: offline ruleset {data['semgrep']['ruleset']} fetched {fetched}",
+        "osv-scanner": f"osv-scanner: offline databases fetched {fetched} for "
+        + ", ".join(sorted(data["osv"]["ecosystems"]))
+        + "; other ecosystems fail the scan",
+        "trivy": f"trivy: offline database updated {data['trivy'].get('db_updated_at')}",
+    }
+    return [texts[tool] for tool in ran if tool in texts]
+
+
 def main() -> int:
     target, output, task = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
     versions = json.loads(TOOL_VERSIONS.read_text()) if TOOL_VERSIONS.is_file() else {}
@@ -108,7 +122,14 @@ def main() -> int:
         language_rows, coverage = language_tools(output)
         rows += language_rows
 
-    limitations += [LIVE_DATA[tool] for tool, _, _, _ in rows if tool in LIVE_DATA]
+    offline = os.environ.get("APPSEC_OFFLINE") == "1"
+    offline_data = None
+    ran = [tool for tool, _, _, _ in rows]
+    if offline:
+        offline_data = json.loads(OFFLINE_DATA.read_text(encoding="utf-8"))
+        limitations += offline_limitations(offline_data, ran)
+    else:
+        limitations += [LIVE_DATA[tool] for tool in ran if tool in LIVE_DATA]
 
     tools = []
     for tool, report, status, reason in rows:
@@ -133,7 +154,12 @@ def main() -> int:
             "makefile_mcp": versions.get("makefile-mcp"),
         },
         "target": target_fingerprint(target),
-        "run": {"task": task, "completed_at": datetime.now(UTC).isoformat(timespec="seconds")},
+        "run": {
+            "task": task,
+            "completed_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "network": "offline" if offline else "online",
+        },
+        "offline_data": offline_data,
         "tools": tools,
         "coverage": coverage,
         "limitations": limitations,

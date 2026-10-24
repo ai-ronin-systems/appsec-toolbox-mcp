@@ -15,8 +15,12 @@ services:
       - no-new-privileges:true
     tmpfs:
       - /tmp:rw,nosuid,nodev,size=3g
+    # Offline: APPSEC_OFFLINE=1 APPSEC_NETWORK=none, with OFFLINE_DATA_DIR from `make offline-data`.
+    network_mode: ${APPSEC_NETWORK:-bridge}
     environment:
       APPSEC_LANGS: ${APPSEC_LANGS:-auto}
+      APPSEC_OFFLINE: ${APPSEC_OFFLINE:-0}
     volumes:
       - ${TARGET_DIR:?Set TARGET_DIR to the repository to audit}:/runner/target:ro
       - ${OUTPUT_DIR:-./output}:/runner/output:rw
+      - ${OFFLINE_DATA_DIR:-./offline-data}:/runner/offline-data:ro

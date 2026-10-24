@@ -31,6 +31,10 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Added
 
+- Offline mode: `make offline-data` fetches Semgrep `p/default`, the Trivy databases, and OSV
+  databases per ecosystem into a directory; scans with `APPSEC_OFFLINE=1` then run with
+  `--network none` from that read-only data. The run manifest records `run.network` and the
+  fetched data's dates and SHA-256. The image test runs the full bundle offline.
 - `output/suppressions.json`, written by `security-semgrep`: inline suppression markers in the
   target (file, line, marker, never the line text) and the scanner settings files it ships.
 - `docs/threat-model.md`: the audited repository as the attacker, threats and controls,

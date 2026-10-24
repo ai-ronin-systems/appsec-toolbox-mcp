@@ -4,3 +4,4 @@
 !/target/.gitkeep
 *.zip
 .DS_Store
+/offline-data/
