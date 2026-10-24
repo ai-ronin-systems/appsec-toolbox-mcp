@@ -14,6 +14,8 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 - Errors caused by the audited code, such as Go packages that cannot load, are recorded as
   coverage limits instead of failing `security-language`. One bad import no longer stops
   `appsec-full` before the SBOM and its manifest. A scanner that cannot run still fails.
+- OSV-Scanner parse failures are kept in `output/osv.errors`, and the manifest marks the scan
+  `ERROR`. A corrupt lockfile used to pass for a clean scan with no vulnerable dependencies.
 - The documented `docker run` and Compose setups cap memory (6 GB, including the RAM-backed
   `/tmp`) and processes (512). Scans of the samples peak near 2 GB and 100 processes; the image
   test runs with these limits.

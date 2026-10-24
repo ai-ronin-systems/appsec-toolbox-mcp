@@ -4,7 +4,12 @@ set -eu
 TARGET_DIR=${1:?target directory required}
 REPORT_PATH=${2:?report path required}
 TMP_REPORT="${REPORT_PATH}.tmp"
-trap 'rm -f "$TMP_REPORT"' EXIT HUP INT TERM
+TMP_STDERR="${REPORT_PATH}.stderr"
+# Dependency files OSV could not parse. The manifest marks the scan as an error when present,
+# so a corrupt lockfile cannot pass for "no vulnerable dependencies".
+ERRORS_PATH="${REPORT_PATH%.json}.errors"
+trap 'rm -f "$TMP_REPORT" "$TMP_STDERR"' EXIT HUP INT TERM
+rm -f "$ERRORS_PATH"
 
 # Offline: use the databases fetched by `make offline-data`. An ecosystem that was not fetched
 # fails the scan instead of reporting no vulnerabilities.
@@ -23,9 +28,12 @@ osv-scanner scan source \
   $OFFLINE_FLAG \
   --config=config/osv-scanner.toml \
   --format json \
-  "$TARGET_DIR" >"$TMP_REPORT"
+  "$TARGET_DIR" >"$TMP_REPORT" 2>"$TMP_STDERR"
 status=$?
 set -e
+cat "$TMP_STDERR" >&2
+grep -E 'Error during extraction|could not extract' "$TMP_STDERR" >"$ERRORS_PATH" \
+  || rm -f "$ERRORS_PATH"
 
 # OSV-Scanner uses exit 1 for findings. Findings are evidence, not execution failure.
 case "$status" in

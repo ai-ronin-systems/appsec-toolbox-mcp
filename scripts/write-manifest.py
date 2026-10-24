@@ -43,6 +43,7 @@ LIVE_DATA = {
     "trivy": "trivy: vulnerability database is downloaded at scan time",
 }
 STATUS = {"completed": "COMPLETED", "error": "ERROR"}
+MAX_ERRORS = 20
 
 
 def sha256_file(path: Path) -> str:
@@ -156,6 +157,14 @@ def main() -> int:
         entry = {"name": tool, "version": version, "status": status}
         if reason:
             entry["reason"] = reason
+        errors = output / f"{Path(report).stem}.errors" if report else None
+        if errors is not None and errors.is_file():
+            # The scanner ran but could not read some of the target, so its report is not a
+            # complete answer: say so rather than let it pass for a clean result.
+            lines = errors.read_text(encoding="utf-8", errors="replace").splitlines()
+            entry["status"] = "ERROR"
+            entry["reason"] = f"{len(lines)} input file(s) could not be parsed; see {errors.name}"
+            entry["errors"] = lines[:MAX_ERRORS]
         if report and (output / report).is_file():
             entry["report"] = report
             entry["report_sha256"] = sha256_file(output / report)

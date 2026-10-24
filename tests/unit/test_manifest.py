@@ -114,3 +114,19 @@ def test_offline_without_data_fails_instead_of_claiming_offline(manifest, tmp_pa
 
     with pytest.raises(FileNotFoundError):
         manifest.main()
+
+
+def test_unparseable_dependency_files_mark_the_scan_as_an_error(manifest, tmp_path, monkeypatch):
+    (tmp_path / "output").mkdir()
+    (tmp_path / "output" / "osv.json").write_text('{"results": []}')
+    (tmp_path / "output" / "osv.errors").write_text(
+        "Error during extraction: could not extract from /runner/target/package-lock.json\n"
+    )
+
+    result = _run(manifest, tmp_path, "security-osv", monkeypatch)
+
+    osv = next(tool for tool in result["tools"] if tool["name"] == "osv-scanner")
+    assert osv["status"] == "ERROR"
+    assert osv["reason"] == "1 input file(s) could not be parsed; see osv.errors"
+    assert osv["errors"][0].endswith("package-lock.json")
+    assert osv["report"] == "osv.json"
