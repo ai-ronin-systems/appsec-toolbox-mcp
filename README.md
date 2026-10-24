@@ -288,11 +288,15 @@ A higher-level consumer such as AuditHound can decide *why* a capability should 
 ## Development
 
 ```bash
-make test
+pipx install pytest==8.4.2 && pipx install ruff==0.14.0
+make test         # ruff, unit tests, smoke test
 make image
+make test-image   # the real image: known positives, hostile sample, offline mode (needs Docker, network, ~4 GB disk)
 ```
 
-The smoke test uses fake scanner executables, so it validates Make wiring, polyglot auto-detection, explicit profile overrides, and report handling without downloading security databases.
+- Unit tests in `tests/unit` cover the scripts: language selection, bytecode discovery, scanner status, the manifest fingerprint against the documented coreutils pipeline, offline data, and the suppression inventory.
+- The smoke test uses fake scanner executables. It checks Make wiring, polyglot auto-detection, explicit profile overrides, offline flags, and that every guard against target-owned settings is passed, without downloading security databases.
+- The image test runs the real scanners. CI runs it on every push and before every release.
 
 ## License
 

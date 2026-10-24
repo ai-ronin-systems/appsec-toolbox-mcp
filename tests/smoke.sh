@@ -308,7 +308,7 @@ test -f "$ROOT/.makefile-mcp.yaml"
 test ! -e "$ROOT/.make-mcp.yaml"
 
 # Ensure maintenance targets are explicitly hidden from Makefile MCP config.
-for task in toolbox-check toolbox-versions offline-data test test-image image; do
+for task in toolbox-check toolbox-versions offline-data test lint test-image image; do
   grep -A1 "^  ${task}:" "$ROOT/.makefile-mcp.yaml" | grep -q 'enabled: false'
 done
 

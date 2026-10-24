@@ -52,7 +52,10 @@ def scan(target: Path) -> dict:
     skipped = {"symlinks": 0, "large_files": 0, "binary_files": 0, "unreadable_files": 0}
     truncated = False
     for directory, subdirs, names in os.walk(target, followlinks=False):
-        subdirs[:] = sorted(d for d in subdirs if d not in PRUNE_DIRS)
+        # os.walk lists symlinked directories as directories; count them and never enter them.
+        links = {d for d in subdirs if Path(directory, d).is_symlink()}
+        skipped["symlinks"] += len(links)
+        subdirs[:] = sorted(d for d in subdirs if d not in PRUNE_DIRS and d not in links)
         for name in sorted(names):
             if truncated:
                 break

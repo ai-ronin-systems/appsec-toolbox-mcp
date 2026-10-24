@@ -60,7 +60,11 @@ def main() -> int:
     (data / "offline-data.json").unlink(missing_ok=True)
 
     rules = data / "semgrep" / "p-default.yml"
-    semgrep = {"ruleset": SEMGREP_RULESET, "file": "semgrep/p-default.yml", **download(SEMGREP_URL, rules)}
+    semgrep = {
+        "ruleset": SEMGREP_RULESET,
+        "file": "semgrep/p-default.yml",
+        **download(SEMGREP_URL, rules),
+    }
 
     osv = {}
     for ecosystem in ecosystems:

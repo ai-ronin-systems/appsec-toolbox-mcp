@@ -45,6 +45,9 @@ tasks:
   test:
     enabled: false
 
+  lint:
+    enabled: false
+
   test-image:
     enabled: false
 

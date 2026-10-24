@@ -22,7 +22,10 @@ OFFLINE_DATA = Path("offline-data/offline-data.json")
 # Reports each exposed task produces: (tool, report file). Only these count for a run, so a
 # report left over from an earlier task is never attributed to this one.
 GENERIC = {
-    "security-semgrep": [("semgrep", "semgrep.json"), ("suppression-inventory", "suppressions.json")],
+    "security-semgrep": [
+        ("semgrep", "semgrep.json"),
+        ("suppression-inventory", "suppressions.json"),
+    ],
     "security-gitleaks": [("gitleaks", "gitleaks.json")],
     "security-osv": [("osv-scanner", "osv.json")],
     "security-trivy": [("trivy", "trivy.json")],

@@ -37,7 +37,7 @@ $(if $(filter $@,$(MAKECMDGOALS)),@APPSEC_OFFLINE="$(APPSEC_OFFLINE)" ./scripts/
 endef
 
 .PHONY: appsec-full security-semgrep security-gitleaks security-osv security-trivy security-checkov security-language \
-        supply-chain-sbom toolbox-check toolbox-versions offline-data test test-image image
+        supply-chain-sbom toolbox-check toolbox-versions offline-data test lint test-image image
 
 appsec-full: security-semgrep security-gitleaks security-osv security-trivy security-checkov security-language supply-chain-sbom ## Run the complete passive AppSec evidence bundle
 	$(manifest)
@@ -137,8 +137,17 @@ toolbox-versions:
 	@printf 'go: '; go version
 	@printf 'syft: '; syft version | head -n 1
 
-test:
+# Unit tests and lint need pytest and ruff (pipx install pytest==8.4.2 ruff==0.14.0).
+PYTEST ?= pytest
+RUFF ?= ruff
+
+test: lint
+	@$(PYTEST) -q
 	@./tests/smoke.sh
+
+lint:
+	@$(RUFF) check scripts tests/unit
+	@$(RUFF) format --check scripts tests/unit
 
 # Known-positive run of the real image against examples/vulnerable-sample (Docker + network).
 test-image:

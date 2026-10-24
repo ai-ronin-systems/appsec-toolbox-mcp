@@ -225,9 +225,7 @@ def run_scanner(
     rel_report = _relative(report, output_root.parent)
     if code not in allowed or not report.is_file():
         reason = (
-            f"scanner exited with code {code}"
-            if code not in allowed
-            else "report was not produced"
+            f"scanner exited with code {code}" if code not in allowed else "report was not produced"
         )
         return scanner_result(
             scanner,
@@ -317,8 +315,7 @@ def main() -> int:
                     "java",
                     "skipped",
                     reason=(
-                        "no compiled Java bytecode found; "
-                        "toolbox does not build untrusted source"
+                        "no compiled Java bytecode found; toolbox does not build untrusted source"
                     ),
                 )
             )

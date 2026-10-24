@@ -28,12 +28,14 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Fixed
 
+- `output/suppressions.json` counts symlinked directories as skipped symlinks.
 - `security-language` no longer fails on JavaScript repositories with findings. njsscan
   exits 1 when it reports issues; that is now evidence, and only errors listed in its
   report fail the scan.
 
 ### Added
 
+- Unit tests for the scripts, and ruff lint and format checks, run by `make test` and CI.
 - Offline mode: `make offline-data` fetches Semgrep `p/default`, the Trivy databases, and OSV
   databases per ecosystem into a directory; scans with `APPSEC_OFFLINE=1` then run with
   `--network none` from that read-only data. The run manifest records `run.network` and the

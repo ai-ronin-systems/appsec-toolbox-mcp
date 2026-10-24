@@ -25,7 +25,9 @@ jobs:
           spec="$(sed -n 's/^ARG MAKEFILE_MCP_SPEC="\(.*\)"/\1/p' Dockerfile)"
           test -n "$spec"
           pipx install "$spec"
-      - name: Smoke test
+      - name: Install unit-test and lint tools
+        run: pipx install pytest==8.4.2 && pipx install ruff==0.14.0
+      - name: Lint, unit tests, and smoke test
         run: make test
       - name: Validate Dockerfile parse/build metadata
         run: docker build --check .
