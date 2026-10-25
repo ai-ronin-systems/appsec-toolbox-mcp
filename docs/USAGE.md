@@ -2,7 +2,7 @@
 
 Operating detail for appsec-toolbox-mcp: what each tool produces, language profiles, the evidence files, offline mode, scanner behaviour, network use, versions, and development. Start with the [README](../README.md); the security model is in the [threat model](threat-model.md).
 
-Commands use `$IMAGE`. Set it to a released image (`ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:<version>`) or to a local build (`docker build -t appsec-toolbox-mcp:dev .`, then `IMAGE=appsec-toolbox-mcp:dev`). Offline mode, the resource limits, and the target-settings hardening are on `main` and ship in the next release; 0.2.1 predates them.
+Commands use `$IMAGE`. Set it to a released image (`ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:<version>`) or to a local build (`docker build -t appsec-toolbox-mcp:dev .`, then `IMAGE=appsec-toolbox-mcp:dev`).
 
 ## Running the server
 
@@ -187,7 +187,7 @@ The target repository is mounted read-only. The output directory is the only per
 
 The Dockerfile pins scanner versions rather than using floating `latest` tags. See [`docs/TOOLING.md`](TOOLING.md).
 
-`MAKEFILE_MCP_SPEC` defaults to `makefile-mcp==0.2.2` and can be overridden at build time while Makefile MCP is under local development:
+`MAKEFILE_MCP_SPEC` defaults to `makefile-mcp==0.3.0` and can be overridden at build time while Makefile MCP is under local development:
 
 ```bash
 docker build \

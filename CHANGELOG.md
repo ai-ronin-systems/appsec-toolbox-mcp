@@ -5,6 +5,8 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ## Unreleased
 
+## 0.3.0 — 2026-10-25
+
 ### Documentation
 
 - The README leads with what the toolbox is for, its engineering highlights with links to
@@ -12,6 +14,8 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ### Security
 
+- The image runs Makefile MCP 0.3.0, which carries the MCP SDK 2.2.0 fix for CVE-2026-59951,
+  the `pin` policy, and the hash-chained audit log.
 - A file name that is not valid UTF-8 no longer crashes the manifest writer and fails every
   task. Names that `sha256sum` escapes now fingerprint the way the documented command does.
 - Code kept under `build/`, `dist/`, `vendor/`, `target/`, or similar directories now selects
