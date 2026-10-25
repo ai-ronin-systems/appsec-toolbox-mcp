@@ -2,7 +2,7 @@
 
 Operating detail for appsec-toolbox-mcp: what each tool produces, language profiles, the evidence files, offline mode, scanner behaviour, network use, versions, and development. Start with the [README](../README.md); the security model is in the [threat model](threat-model.md).
 
-Commands use `$IMAGE`. Set it to a released image (`ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:<version>`) or to a local build (`docker build -t appsec-toolbox-mcp:dev .`, then `IMAGE=appsec-toolbox-mcp:dev`). Offline mode, the resource limits, and the target-settings hardening are on `main` and ship in the next release; 0.2.1 predates them.
+Commands use `$IMAGE`. Set it to a released image (`ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:<version>`) or to a local build (`docker build -t appsec-toolbox-mcp:dev .`, then `IMAGE=appsec-toolbox-mcp:dev`).
 
 ## Running the server
 

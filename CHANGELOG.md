@@ -5,6 +5,8 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ## Unreleased
 
+## 0.3.0 — 2026-10-25
+
 ### Documentation
 
 - The README leads with what the toolbox is for, its engineering highlights with links to

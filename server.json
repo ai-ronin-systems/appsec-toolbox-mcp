@@ -8,11 +8,11 @@
     "url": "https://github.com/ai-ronin-systems/appsec-toolbox-mcp",
     "source": "github"
   },
-  "version": "0.2.1",
+  "version": "0.3.0",
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.1",
+      "identifier": "ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.3.0",
       "transport": {
         "type": "stdio"
       },

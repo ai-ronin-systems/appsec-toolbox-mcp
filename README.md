@@ -37,7 +37,7 @@ Each claim links to the code or test that proves it.
 ## Quick start
 
 ```bash
-IMAGE=ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.1
+IMAGE=ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.3.0
 docker pull "$IMAGE"
 gh attestation verify "oci://$IMAGE" --owner ai-ronin-systems
 ```
@@ -68,7 +68,7 @@ Register the same command as a stdio server in any MCP client:
                "--tmpfs", "/tmp:rw,nosuid,nodev,size=3g", "--memory=6g", "--pids-limit=512",
                "-v", "/abs/path/my-project:/runner/target:ro",
                "-v", "/abs/path/appsec-output:/runner/output:rw",
-               "ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.2.1"]
+               "ghcr.io/ai-ronin-systems/appsec-toolbox-mcp:0.3.0"]
     }
   }
 }
