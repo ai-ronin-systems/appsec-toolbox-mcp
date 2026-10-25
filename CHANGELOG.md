@@ -5,6 +5,11 @@ All notable changes to appsec-toolbox-mcp are documented here. Releases publish 
 
 ## Unreleased
 
+### Documentation
+
+- The README leads with what the toolbox is for, its engineering highlights with links to
+  the code and tests behind them, and a quick start. Operating detail moved to `docs/USAGE.md`.
+
 ### Security
 
 - A file name that is not valid UTF-8 no longer crashes the manifest writer and fails every
