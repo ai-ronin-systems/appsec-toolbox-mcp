@@ -1,7 +1,7 @@
 # Pinned by digest so a rebuild cannot pick up a different base; Dependabot proposes updates.
 FROM python:3.12-slim-bookworm@sha256:6a0e06f5ba0b373d051aabd3fffb9b873f27f9a2a3a14bcbe37dee6f0e3bbc70
 
-ARG MAKEFILE_MCP_SPEC="makefile-mcp==0.2.2"
+ARG MAKEFILE_MCP_SPEC="makefile-mcp==0.3.0"
 ARG SEMGREP_VERSION="1.174.0"
 ARG GITLEAKS_VERSION="8.29.1"
 ARG OSV_SCANNER_VERSION="2.5.1"

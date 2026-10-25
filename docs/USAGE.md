@@ -187,7 +187,7 @@ The target repository is mounted read-only. The output directory is the only per
 
 The Dockerfile pins scanner versions rather than using floating `latest` tags. See [`docs/TOOLING.md`](TOOLING.md).
 
-`MAKEFILE_MCP_SPEC` defaults to `makefile-mcp==0.2.2` and can be overridden at build time while Makefile MCP is under local development:
+`MAKEFILE_MCP_SPEC` defaults to `makefile-mcp==0.3.0` and can be overridden at build time while Makefile MCP is under local development:
 
 ```bash
 docker build \
